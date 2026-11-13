@@ -34,7 +34,7 @@ The pinned npm dependency graph includes PDF, DOCX, spreadsheet, QR/barcode, OCR
 
 ## Liquid Glass rendering level
 
-The current browser interface uses CSS backdrop transmission/blur, layered tint, contour highlights, and depth cues (L1). This DOM implementation does not sample and displace arbitrary page-backdrop pixels, so it does not claim L2 refraction or L3 liquid morphing. The UI keeps semantic text and controls crisp and includes reduced-motion and reduced-transparency fallbacks.
+The main browser interface uses CSS backdrop transmission/blur, layered tint, contour highlights, and depth cues (L1). The home hero also contains a self-contained WebGL2 lens scene: the app owns that scene and visibly displaces its own rendered backdrop inside a curved mask (localized L2 visual). It does not sample or refract arbitrary DOM/page content, and it does not implement L3 merging/morphing. When WebGL2 is unavailable, the hero uses a CSS visual fallback. Semantic text and controls remain crisp; reduced-motion, reduced-transparency, and responsive fallbacks are included.
 
 ## Privacy
 

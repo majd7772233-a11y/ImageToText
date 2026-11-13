@@ -8,6 +8,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("index.html");
 const shell = read("script/app-shell.js");
 const styles = read("css/liquid-glass.css");
+const premiumStyles = read("css/liquid-glass-premium.css");
+const heroRenderer = read("script/liquid-hero.js");
 
 test("the home screen and dedicated tool screen are present", () => {
   assert.match(html, /id="homeScreen"/);
@@ -55,4 +57,38 @@ test("card pointer lighting is decorative and selection state is synchronized", 
   assert.match(shell, /card\.addEventListener\("pointermove"/);
   assert.match(shell, /card\.setAttribute\("aria-pressed", "false"\)/);
   assert.match(shell, /card\.setAttribute\("aria-pressed", String\(selected\)\)/);
+});
+
+
+test("the premium hero has a shape-aware WebGL2 lens and a CSS fallback", () => {
+  assert.match(html, /id="heroVisual"/);
+  assert.match(html, /id="heroGlassCanvas"/);
+  assert.match(html, /script\/liquid-hero\.js/);
+  assert.match(heroRenderer, /getContext\("webgl2"/);
+  assert.match(heroRenderer, /smoothMin/);
+  assert.match(heroRenderer, /backdrop\(clamp\(uv\+off/);
+  assert.match(heroRenderer, /data-renderer="fallback"/);
+  assert.match(heroRenderer, /1000\/30/);
+});
+
+test("hero rendering pauses off-screen and honors reduced motion", () => {
+  assert.match(heroRenderer, /IntersectionObserver/);
+  assert.match(heroRenderer, /document\.hidden/);
+  assert.match(heroRenderer, /prefers-reduced-motion/);
+  assert.match(premiumStyles, /prefers-reduced-motion:reduce/);
+});
+
+test("library exposes live result counts and accessible category state", () => {
+  assert.match(html, /id="visibleToolCount"/);
+  assert.match(html, /data-category-count="images"/);
+  assert.match(html, /id="exploreToolsBtn"/);
+  assert.match(shell, /visibleToolCount\.textContent/);
+  assert.match(shell, /button\.setAttribute\("aria-pressed", String\(active\)\)/);
+});
+
+test("premium visual layer retains responsive and transparency fallbacks", () => {
+  assert.match(premiumStyles, /max-width:680px/);
+  assert.match(premiumStyles, /prefers-reduced-transparency/);
+  assert.match(premiumStyles, /@supports not/);
+  assert.match(premiumStyles, /backdrop-filter:blur\(21px\)/);
 });

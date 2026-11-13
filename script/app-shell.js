@@ -49,10 +49,17 @@
   const toolScreen = byIdElement("toolScreen");
   const search = byIdElement("toolSearch");
   const emptyState = byIdElement("emptySearchState");
+  const visibleToolCount = byIdElement("visibleToolCount");
   const categoryButtons = Array.from(document.querySelectorAll("[data-category-filter]"));
   let activeCategory = "all";
   let activeTool = null;
   let previewObjectUrl = null;
+  const catalogCounts = { all: tools.length, images: 0, pdf: 0, office: 0, codes: 0 };
+  tools.forEach((tool) => { catalogCounts[categoryFor(tool.id)] += 1; });
+  Object.keys(catalogCounts).forEach((category) => {
+    const count = document.querySelector('[data-category-count="' + category + '"]');
+    if (count) count.textContent = String(catalogCounts[category]);
+  });
 
   if (!grid || !nav || !homeScreen || !toolScreen) return;
 
@@ -154,9 +161,11 @@
       if (show) visible += 1;
     });
     if (emptyState) emptyState.hidden = visible > 0;
+    if (visibleToolCount) visibleToolCount.textContent = String(visible);
     categoryButtons.forEach((button) => {
       const active = button.dataset.categoryFilter === activeCategory;
       button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
       if (button.classList.contains("sidebar-nav-item")) {
         button.classList.toggle("is-active", active);
       }
@@ -244,6 +253,15 @@
       }
     });
   }
+
+  const exploreTools = byIdElement("exploreToolsBtn");
+  if (exploreTools) exploreTools.addEventListener("click", function () {
+    const library = byIdElement("librarySection");
+    if (library) library.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start"
+    });
+  });
 
   const homeButton = byIdElement("homeNavButton");
   if (homeButton) homeButton.addEventListener("click", showHome);
