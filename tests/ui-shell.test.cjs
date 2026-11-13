@@ -130,3 +130,30 @@ test("PDF text grouping uses coordinates to create rows and approximate columns"
   ];
   assert.deepEqual(utils.groupPdfTextItems(items), [["Name", "Score"], ["Ali", "95"]]);
 });
+
+
+test("PDF row direction is detected independently for mixed Arabic and English rows", () => {
+  const items = [
+    { str: "يمين", transform: [1, 0, 0, 1, 100, 100], width: 30 },
+    { str: "يسار", transform: [1, 0, 0, 1, 20, 100], width: 30 },
+    { str: "Name", transform: [1, 0, 0, 1, 20, 80], width: 35 },
+    { str: "Score", transform: [1, 0, 0, 1, 100, 80], width: 35 }
+  ];
+  assert.deepEqual(utils.groupPdfTextItems(items), [["يمين", "يسار"], ["Name", "Score"]]);
+});
+
+test("image placement preserves aspect ratio and centers both orientations", () => {
+  assert.deepEqual(utils.fitImageToPage(400, 200, 100, 100), { x: 0, y: 25, width: 100, height: 50, scale: 0.25 });
+  assert.deepEqual(utils.fitImageToPage(200, 400, 100, 100), { x: 25, y: 0, width: 50, height: 100, scale: 0.25 });
+  assert.throws(() => utils.fitImageToPage(0, 200, 100, 100), /positive numbers/i);
+});
+
+test("large image canvas allocations stay within a pixel and dimension budget", () => {
+  const dimensions = utils.getSafeCanvasDimensions(12000, 8000);
+  assert.ok(dimensions.wasScaled);
+  assert.ok(dimensions.width * dimensions.height <= 16000000);
+  assert.ok(dimensions.width <= 8000 && dimensions.height <= 8000);
+  assert.ok(Math.abs(dimensions.width / dimensions.height - 1.5) < 0.001);
+  assert.equal(utils.getSafeCanvasDimensions(1, 1).width, 1);
+  assert.throws(() => utils.getSafeCanvasDimensions(0, 8000), /positive numbers/i);
+});

@@ -6,6 +6,26 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
+  function fitImageToPage(imageWidth, imageHeight, pageWidth, pageHeight) {
+    const values = [imageWidth, imageHeight, pageWidth, pageHeight].map(Number);
+    if (!values.every((value) => Number.isFinite(value) && value > 0)) throw new RangeError("Image and page dimensions must be finite positive numbers.");
+    const [sourceWidth, sourceHeight, targetWidth, targetHeight] = values;
+    const scale = Math.min(targetWidth / sourceWidth, targetHeight / sourceHeight);
+    const width = sourceWidth * scale, height = sourceHeight * scale;
+    return { x: (targetWidth - width) / 2, y: (targetHeight - height) / 2, width, height, scale };
+  }
+
+  function getSafeCanvasDimensions(width, height, options) {
+    const sourceWidth = Number(width), sourceHeight = Number(height);
+    const config = Object.assign({ maxPixels: 16000000, maxDimension: 8000 }, options || {});
+    const maxPixels = Number(config.maxPixels), maxDimension = Number(config.maxDimension);
+    if (![sourceWidth, sourceHeight, maxPixels, maxDimension].every((value) => Number.isFinite(value) && value > 0)) throw new RangeError("Canvas dimensions and limits must be finite positive numbers.");
+    const scale = Math.min(1, Math.sqrt(maxPixels / (sourceWidth * sourceHeight)), maxDimension / Math.max(sourceWidth, sourceHeight));
+    let safeWidth = Math.max(1, Math.floor(sourceWidth * scale));
+    let safeHeight = Math.max(1, Math.floor(sourceHeight * scale));
+    while (safeWidth * safeHeight > maxPixels) { if (safeWidth >= safeHeight) safeWidth -= 1; else safeHeight -= 1; }
+    return { width: safeWidth, height: safeHeight, scale, wasScaled: scale < 1 };
+  }
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (character) => ({
       "&": "&amp;",
@@ -125,11 +145,11 @@
       row.items.push({ text, x, y, width, index });
     });
 
-    const completeText = rows.flatMap((row) => row.items.map((item) => item.text)).join(" ");
-    const rtl = /[\u0590-\u08FF]/.test(completeText);
     rows.sort((first, second) => second.y - first.y);
 
     return rows.map((row) => {
+      const rowText = row.items.map((item) => item.text).join(" ");
+      const rtl = /[\u0590-\u08FF]/.test(rowText);
       const ordered = row.items.slice().sort((first, second) =>
         (rtl ? second.x - first.x : first.x - second.x) || first.index - second.index
       );
@@ -148,5 +168,5 @@
     }).filter((row) => row.some((cell) => cell.trim() !== ""));
   }
 
-  return { escapeHtml, parseCsv, encodeCsv, translateWithDictionary, groupPdfTextItems };
+  return { escapeHtml, parseCsv, encodeCsv, translateWithDictionary, groupPdfTextItems, fitImageToPage, getSafeCanvasDimensions };
 });

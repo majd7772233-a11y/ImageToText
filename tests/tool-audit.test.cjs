@@ -100,3 +100,32 @@ test("legacy trackers and external integrations are not in the active page chain
   assert.ok(!scriptRefs.some((value) => /general\.js|home\.js|trustpilot|script\/emd|tracker/i.test(value)));
   assert.doesNotMatch(appScript, /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/);
 });
+
+
+test("image-to-PDF accepts multiple images and creates one proportional page per image", () => {
+  assert.match(appScript, /case 'jpg-to-pdf':\s*\{[\s\S]*?fileInput\.multiple = true/);
+  assert.match(appScript, /const files = Array\.from\(event\.target\.files \|\| \[\]\)/);
+  assert.match(appScript, /pdf\.addPage\('a4', orientation\)/);
+  assert.match(appScript, /ImageToTextUtils\.fitImageToPage/);
+  assert.match(appScript, /تم وضع كل صورة في صفحة مستقلة/);
+});
+
+test("HTML-to-PDF strips script, style, and hidden DOM nodes before text export", () => {
+  assert.match(appScript, /function extractReadableHtmlText/);
+  assert.match(appScript, /querySelectorAll\('script, style, noscript, template, iframe, object, embed, svg/);
+  assert.match(appScript, /aria-hidden="true"/);
+  assert.match(appScript, /const plain = extractReadableHtmlText\(sourceHtml\)/);
+});
+
+test("empty exports and clipboard failures cannot be reported as successful operations", () => {
+  assert.match(appScript, /ورقة Excel الأولى فارغة؛ لم يتم إنشاء PDF على أنه تحويل ناجح/);
+  assert.match(appScript, /ورقة Excel الأولى فارغة؛ لم يتم إنشاء ملف CSV فارغ/);
+  assert.match(appScript, /تعذر النسخ التلقائي؛ حدد النص وانسخه يدوياً/);
+  assert.match(appScript, /Boolean\(text\)/);
+});
+
+test("image readers cap raster dimensions and QR scanning always releases its canvas", () => {
+  assert.match(appScript, /getSafeCanvasDimensions\(sourceWidth, sourceHeight\)/);
+  assert.match(appScript, /getSafeCanvasDimensions\(image\.naturalWidth, image\.naturalHeight, \{ maxPixels: 8000000/);
+  assert.match(appScript, /if \(canvas\) \{ canvas\.width = 1; canvas\.height = 1; \}/);
+});
