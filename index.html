@@ -962,11 +962,12 @@
           const content = await page.getTextContent();
           let rows = ImageToTextUtils.groupPdfTextItems(content.items);
           if (!rows.length && allowOcr) {
-            updateStatus('الصفحة ' + pageNumber + ' صورة ممسوحة؛ يجري التعرف عليها...', false);
             const baseViewport = page.getViewport({ scale: 1.65 });
             const canvasBudget = ImageToTextUtils.getSafeCanvasDimensions(
               Math.ceil(baseViewport.width), Math.ceil(baseViewport.height)
             );
+            const scaleNote = canvasBudget.wasScaled ? ' (تم تقليل دقة التصيير لتقليل الذاكرة)' : '';
+            updateStatus('الصفحة ' + pageNumber + ' صورة ممسوحة؛ يجري التعرف عليها...' + scaleNote, false);
             const renderScale = 1.65 * (canvasBudget.wasScaled ? canvasBudget.scale * 0.999 : 1);
             const viewport = page.getViewport({ scale: renderScale });
             const canvas = document.createElement('canvas');
@@ -1132,6 +1133,7 @@
               if (!window.JSZip) throw new Error('مكتبة ZIP المحلية غير متاحة.');
               const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
               const archive = new JSZip();
+              let scaledPageCount = 0;
               for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
                 updateStatus('يجري تحويل الصفحة ' + pageNumber + ' من ' + pdf.numPages + '...', false);
                 const page = await pdf.getPage(pageNumber);
@@ -1139,6 +1141,7 @@
                 const canvasBudget = ImageToTextUtils.getSafeCanvasDimensions(
                   Math.ceil(baseViewport.width), Math.ceil(baseViewport.height)
                 );
+                if (canvasBudget.wasScaled) scaledPageCount += 1;
                 const renderScale = 1.6 * (canvasBudget.wasScaled ? canvasBudget.scale * 0.999 : 1);
                 const viewport = page.getViewport({ scale: renderScale });
                 const canvas = document.createElement('canvas');
@@ -1164,7 +1167,10 @@
               });
               downloadBlob(zipBlob, file.name.replace(/\.pdf$/i, '') + '-pages.zip');
               outputText.value = 'تم تحويل جميع صفحات الملف (' + pdf.numPages + ') إلى صور JPG داخل ZIP.';
-              updateStatus('تم تحويل ' + pdf.numPages + ' صفحة إلى صور JPG وتنزيلها داخل ملف ZIP.', true);
+              const scaleNote = scaledPageCount
+                ? ' تم تقليل دقة ' + scaledPageCount + ' صفحة كبيرة لتقليل استهلاك الذاكرة.'
+                : '';
+              updateStatus('تم تحويل ' + pdf.numPages + ' صفحة إلى صور JPG وتنزيلها داخل ملف ZIP.' + scaleNote, true);
             });
             fileInput.click();
             break;

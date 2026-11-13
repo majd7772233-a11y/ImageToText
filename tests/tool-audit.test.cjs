@@ -157,3 +157,10 @@ test("PDF raster OCR and PDF-to-JPG exports cap large canvases and release page 
   assert.match(appScript, /finally \{\s*canvas\.width = 1;\s*canvas\.height = 1;/);
   assert.match(appScript, /تعذر إنشاء مساحة OCR آمنة لصفحة PDF/);
 });
+
+
+test("large PDF raster pages disclose when render resolution is reduced", () => {
+  assert.match(appScript, /تم تقليل دقة التصيير لتقليل الذاكرة/);
+  assert.match(appScript, /let scaledPageCount = 0/);
+  assert.match(appScript, /تم تقليل دقة .* صفحة كبيرة لتقليل استهلاك الذاكرة/);
+});
