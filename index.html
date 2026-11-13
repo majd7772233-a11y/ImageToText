@@ -782,35 +782,113 @@
         return new Blob([ab], { type: mime });
       }
 
-      function textToPdfBlob(text, title = 'Converted Document') {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-        const margin = 14;
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const maxWidth = pageWidth - margin * 2;
-        const content = String(text || '');
-        const lines = pdf.splitTextToSize(content, maxWidth);
-        const rtl = /[\u0590-\u08FF]/.test(content);
-        const lineHeight = 6.2;
-        let y = margin + 18;
-
-        pdf.setFontSize(11);
-        pdf.text(title, margin, margin);
-        pdf.setFontSize(11);
-        if (rtl && typeof pdf.setR2L === 'function') pdf.setR2L(true);
-
-        for (const line of lines) {
-          if (y > pageHeight - margin) {
-            pdf.addPage();
-            y = margin + 5;
+      function wrapCanvasParagraph(context, paragraph, maxWidth) {
+        const words = String(paragraph || '').split(/\s+/).filter(Boolean);
+        if (!words.length) return [''];
+        const lines = [];
+        let line = '';
+        words.forEach((word) => {
+          const candidate = line ? line + ' ' + word : word;
+          if (!line || context.measureText(candidate).width <= maxWidth) {
+            line = candidate;
+            return;
           }
-          pdf.text(line, rtl ? pageWidth - margin : margin, y, {
-            align: rtl ? 'right' : 'left',
-            maxWidth
+          lines.push(line);
+          line = '';
+          if (context.measureText(word).width <= maxWidth) {
+            line = word;
+            return;
+          }
+          let fragment = '';
+          Array.from(word).forEach((character) => {
+            const next = fragment + character;
+            if (fragment && context.measureText(next).width > maxWidth) {
+              lines.push(fragment);
+              fragment = character;
+            } else fragment = next;
           });
-          y += lineHeight;
+          line = fragment;
+        });
+        if (line) lines.push(line);
+        return lines;
+      }
+
+      function renderTextCanvases(value, options = {}) {
+        const config = Object.assign({
+          title: 'ImageToText', width: 1200, height: 1697,
+          fontSize: 27, lineHeight: 40, margin: 72
+        }, options);
+        const canvas = document.createElement('canvas');
+        canvas.width = config.width;
+        canvas.height = config.height;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('تعذر إنشاء لوحة رسم لتنسيق النص.');
+        const content = String(value == null ? '' : value).replace(/\r\n?/g, '\n');
+        const maxWidth = config.width - config.margin * 2;
+        context.font = config.fontSize + 'px Tahoma, "Segoe UI", Arial, sans-serif';
+        const lines = [];
+        content.split('\n').forEach((paragraph) => {
+          wrapCanvasParagraph(context, paragraph, maxWidth).forEach((line) => lines.push(line));
+          if (paragraph === '') lines.push('');
+        });
+        if (!lines.length) lines.push('');
+
+        const headerHeight = 112, footerHeight = 58;
+        const firstPageY = config.margin + headerHeight;
+        const bodyBottom = config.height - config.margin - footerHeight;
+        const linesPerPage = Math.max(1, Math.floor((bodyBottom - firstPageY) / config.lineHeight));
+        const pageCount = Math.ceil(lines.length / linesPerPage);
+        const pages = [];
+        for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+          const page = pageIndex === 0 ? canvas : document.createElement('canvas');
+          if (page !== canvas) { page.width = config.width; page.height = config.height; }
+          const ctx = page === canvas ? context : page.getContext('2d');
+          if (!ctx) throw new Error('تعذر تجهيز صفحة PDF رقم ' + (pageIndex + 1) + '.');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, page.width, page.height);
+          const titleRtl = /[\u0590-\u08FF]/.test(config.title);
+          ctx.direction = titleRtl ? 'rtl' : 'ltr';
+          ctx.textAlign = titleRtl ? 'right' : 'left';
+          ctx.fillStyle = '#17243d';
+          ctx.font = 'bold 26px Tahoma, "Segoe UI", Arial, sans-serif';
+          ctx.fillText(config.title, titleRtl ? page.width - config.margin : config.margin, config.margin + 28, maxWidth);
+          ctx.fillStyle = '#c7d3e7';
+          ctx.fillRect(config.margin, config.margin + 48, maxWidth, 2);
+          ctx.font = config.fontSize + 'px Tahoma, "Segoe UI", Arial, sans-serif';
+          ctx.fillStyle = '#1c2b43';
+          const firstLine = pageIndex * linesPerPage;
+          lines.slice(firstLine, firstLine + linesPerPage).forEach((line, lineIndex) => {
+            const rtl = /[\u0590-\u08FF]/.test(line);
+            ctx.direction = rtl ? 'rtl' : 'ltr';
+            ctx.textAlign = rtl ? 'right' : 'left';
+            ctx.fillText(line, rtl ? page.width - config.margin : config.margin,
+              firstPageY + lineIndex * config.lineHeight, maxWidth);
+          });
+          ctx.direction = 'ltr';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#8795ac';
+          ctx.font = '12px Tahoma, "Segoe UI", Arial, sans-serif';
+          ctx.fillText('ImageToText  ·  ' + (pageIndex + 1) + ' / ' + pageCount,
+            page.width / 2, page.height - config.margin / 2);
+          pages.push(page);
         }
+        return pages;
+      }
+
+      async function textToPdfBlob(text, title = 'ImageToText') {
+        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('مكتبة PDF المحلية غير متاحة.');
+        const { jsPDF } = window.jspdf;
+        const pages = renderTextCanvases(text, { title });
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true });
+        const width = pdf.internal.pageSize.getWidth();
+        const height = pdf.internal.pageSize.getHeight();
+        pdf.setProperties({ title: String(title || 'ImageToText'), creator: 'ImageToText local workspace' });
+        pages.forEach((page, index) => {
+          if (index > 0) pdf.addPage();
+          pdf.addImage(page.toDataURL('image/jpeg', 0.93), 'JPEG', 0, 0, width, height, undefined, 'FAST');
+          page.width = 1;
+          page.height = 1;
+        });
         return pdf.output('blob');
       }
 
@@ -1211,10 +1289,10 @@
           case 'text-to-pdf': {
             const text = await promptForText('أدخل النص الذي تريد تحويله إلى PDF:', outputText.value || 'مرحبا بالعالم');
             if (text === null) return;
-            const blob = textToPdfBlob(text);
+            const blob = await textToPdfBlob(text);
             downloadBlob(blob, 'text-to-pdf.pdf');
             outputText.value = text;
-            updateStatus('تم إنشاء ملف PDF من النص.', true);
+            updateStatus('تم إنشاء PDF مُصوّر يدعم عرض العربية؛ النص داخل الصفحات غير قابل للتحديد أو البحث.', true);
             break;
           }
 
@@ -1284,10 +1362,10 @@
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await readDocxText(file);
-              const blob = textToPdfBlob(text, 'DOCX text export');
+              const blob = await textToPdfBlob(text, 'DOCX text export');
               downloadBlob(blob, file.name.replace(/\.docx$/i, '') + '.pdf');
               outputText.value = text;
-              updateStatus('تم تصدير نص DOCX إلى PDF؛ لم يتم الاحتفاظ بتخطيط المستند أو صوره.', true);
+              updateStatus('تم تصدير نص DOCX إلى PDF مُصوّر؛ تخطيط المستند وصوره غير محفوظة والنص غير قابل للتحديد.', true);
             });
             fileInput.click();
             break;
@@ -1452,10 +1530,10 @@
             const parsed = new DOMParser().parseFromString(sourceHtml, 'text/html');
             const plain = (parsed.body?.textContent || '').replace(/\s+/g, ' ').trim();
             if (!plain) throw new Error('لم يتم العثور على نص داخل HTML.');
-            const blob = textToPdfBlob(plain, 'HTML text export');
+            const blob = await textToPdfBlob(plain, 'HTML text export');
             downloadBlob(blob, 'html-text-export.pdf');
             outputText.value = plain;
-            updateStatus('تم تصدير النص المستخرج من HTML إلى PDF؛ لا يتم الاحتفاظ بالتنسيق أو الصور.', true);
+            updateStatus('تم تصدير النص الظاهر من HTML إلى PDF مُصوّر؛ CSS والصور والتنسيق الأصلي غير مضمنة والنص غير قابل للتحديد.', true);
             break;
           }
 
@@ -1543,10 +1621,10 @@
               }
               const text = output.join('\n').trim();
               if (!text) throw new Error('لم يتم العثور على نص داخل الشرائح.');
-              const blob = textToPdfBlob(text, 'PPTX slide text export');
+              const blob = await textToPdfBlob(text, 'PPTX slide text export');
               downloadBlob(blob, file.name.replace(/\.pptx$/i, '') + '-text.pdf');
               outputText.value = text;
-              updateStatus('تم استخراج نصوص الشرائح إلى PDF؛ التصميم والصور والرسوم غير مضمنة.', true);
+              updateStatus('تم استخراج نصوص الشرائح إلى PDF مُصوّر؛ التصميم والصور والرسوم غير مضمنة والنص غير قابل للتحديد.', true);
             });
             fileInput.click();
             break;
@@ -1718,10 +1796,10 @@
               const sheet = workbook.Sheets[workbook.SheetNames[0]];
               const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '', blankrows: false });
               const text = rows.map((row) => Array.isArray(row) ? row.join(' | ') : row).join('\n');
-              const blob = textToPdfBlob(text || 'Excel to PDF');
+              const blob = await textToPdfBlob(text || 'Excel to PDF');
               downloadBlob(blob, 'excel-to-pdf.pdf');
               outputText.value = text;
-              updateStatus('تم تصدير جميع صفوف ورقة Excel الأولى إلى PDF كنص مبسط؛ التنسيق والرسوم والأوراق الأخرى غير مضمنة.', true);
+              updateStatus('تم تصدير جميع صفوف ورقة Excel الأولى إلى PDF مُصوّر كنص مبسط؛ التنسيق والرسوم والأوراق الأخرى غير مضمنة والنص غير قابل للتحديد.', true);
               fileInput.value = '';
             });
             fileInput.click();
