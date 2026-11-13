@@ -10,6 +10,7 @@ const shell = read("script/app-shell.js");
 const styles = read("css/liquid-glass.css");
 const premiumStyles = read("css/liquid-glass-premium.css");
 const heroRenderer = read("script/liquid-hero.js");
+const utils = require("../script/format-utils.js");
 
 test("the home screen and dedicated tool screen are present", () => {
   assert.match(html, /id="homeScreen"/);
@@ -91,4 +92,41 @@ test("premium visual layer retains responsive and transparency fallbacks", () =>
   assert.match(premiumStyles, /prefers-reduced-transparency/);
   assert.match(premiumStyles, /@supports not/);
   assert.match(premiumStyles, /backdrop-filter:blur\(21px\)/);
+});
+
+
+test("CSV parser supports BOM, quoted delimiters, doubled quotes and multiline cells", () => {
+  const source = '\uFEFFName,Note\r\n"Alice, A.","She said ""hello""\nand left"';
+  assert.deepEqual(utils.parseCsv(source), [["Name", "Note"], ["Alice, A.", 'She said "hello"\nand left']]);
+  assert.equal(utils.encodeCsv([["A", "B"], ["one,two", 'say "yes"']]), 'A,B\r\n"one,two","say ""yes"""');
+});
+
+test("CSV parser rejects malformed quoted fields instead of silently splitting them", () => {
+  assert.throws(() => utils.parseCsv('name,note\n"unfinished'), /unclosed quoted field/i);
+  assert.throws(() => utils.parseCsv('a\n"x"oops'), /after a quoted CSV field/i);
+});
+
+test("HTML escaping prevents extracted document text from becoming markup", () => {
+  assert.equal(
+    utils.escapeHtml('<img src=x onerror="run()"> & text'),
+    '&lt;img src=x onerror=&quot;run()&quot;&gt; &amp; text'
+  );
+});
+
+test("offline dictionary translation exposes unsupported words", () => {
+  const result = utils.translateWithDictionary("Hello, unknown world!", { hello: "مرحبا", world: "العالم" });
+  assert.equal(result.text, "مرحبا, unknown العالم!");
+  assert.equal(result.translatedWords, 2);
+  assert.equal(result.totalWords, 3);
+  assert.deepEqual(result.unsupportedWords, ["unknown"]);
+});
+
+test("PDF text grouping uses coordinates to create rows and approximate columns", () => {
+  const items = [
+    { str: "Name", transform: [1, 0, 0, 1, 10, 100], width: 24 },
+    { str: "Score", transform: [1, 0, 0, 1, 100, 100], width: 28 },
+    { str: "Ali", transform: [1, 0, 0, 1, 10, 80], width: 12 },
+    { str: "95", transform: [1, 0, 0, 1, 100, 80], width: 10 }
+  ];
+  assert.deepEqual(utils.groupPdfTextItems(items), [["Name", "Score"], ["Ali", "95"]]);
 });
