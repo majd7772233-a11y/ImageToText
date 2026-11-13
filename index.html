@@ -1072,15 +1072,16 @@
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await imageToText(file);
+              if (!text) throw new Error('لم يتم العثور على نص في الصورة؛ لم يتم إنشاء مستند فارغ.');
               const { Document, Packer, Paragraph, TextRun } = window.docx;
-              const doc = new Document({
-                sections: [{ children: [new Paragraph({ children: [new TextRun({ text: `اسم الملف: ${file.name}\n\n${text || 'لا يوجد نص في الصورة'}` })] })] }]
-              });
+              const doc = new Document({ sections: [{ children: [
+                new Paragraph({ children: [new TextRun({ text: 'Image OCR export' })] }),
+                ...text.split(/\r?\n/).filter(Boolean).map(line => new Paragraph({ children: [new TextRun({ text: line })] }))
+              ] }] });
               const blob = await Packer.toBlob(doc);
-              downloadBlob(blob, 'image-to-word.docx');
-              outputText.value = text || 'لا يوجد نص واضح في الصورة.';
-              updateStatus('تم إنشاء مستند Word من الصورة.', true);
-              fileInput.value = '';
+              downloadBlob(blob, file.name.replace(/\.[^.]+$/, '') + '-ocr.docx');
+              outputText.value = text;
+              updateStatus('تم إنشاء DOCX من النص المستخرج عبر OCR؛ الصورة الأصلية وتخطيطها غير مضمنين.', true);
             });
             fileInput.click();
             break;
@@ -1091,20 +1092,30 @@
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const img = new Image();
-              img.src = URL.createObjectURL(file);
-              await img.decode();
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = img.width;
-              canvas.height = img.height;
-              ctx.drawImage(img, 0, 0);
-              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              const code = window.jsQR(imageData.data, imageData.width, imageData.height);
-              const result = code ? code.data : 'لم يتم العثور على QR Code في الصورة.';
-              outputText.value = result;
-              updateStatus(result.includes('لم يتم العثور') ? 'لم يتم العثور على رمز QR.' : 'تم قراءة كود QR بنجاح.', result.includes('لم يتم العثور') ? false : true);
-              fileInput.value = '';
+              const objectUrl = URL.createObjectURL(file);
+              try {
+                const image = new Image();
+                image.src = objectUrl;
+                await image.decode();
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d', { willReadFrequently: true });
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+                context.drawImage(image, 0, 0);
+                const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = window.jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'attemptBoth' });
+                if (!code) {
+                  outputText.value = '';
+                  updateStatus('لم يتم العثور على رمز QR في الصورة.', false);
+                  return;
+                }
+                outputText.value = code.data;
+                updateStatus('تم فك رمز QR وقراءة محتواه بنجاح.', true);
+                canvas.width = 1;
+                canvas.height = 1;
+              } finally {
+                URL.revokeObjectURL(objectUrl);
+              }
             });
             fileInput.click();
             break;
@@ -1268,26 +1279,40 @@
           }
 
           case 'word-to-jpg': {
-            fileInput.accept = '.doc,.docx';
+            fileInput.accept = '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const text = await readDocxText(file) || 'استخراج نص من ملف Word';
+              const text = await readDocxText(file);
               const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
+              const context = canvas.getContext('2d');
+              const fontSize = 30, lineHeight = 46, maxWidth = 1120;
+              context.font = fontSize + 'px Tahoma, "Segoe UI", sans-serif';
+              const lines = [];
+              text.split(/\r?\n/).forEach(paragraph => {
+                let line = '';
+                paragraph.split(/\s+/).filter(Boolean).forEach(word => {
+                  const candidate = line ? line + ' ' + word : word;
+                  if (line && context.measureText(candidate).width > maxWidth) {
+                    lines.push(line); line = word;
+                  } else line = candidate;
+                });
+                if (line) lines.push(line);
+              });
               canvas.width = 1200;
-              canvas.height = 800;
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = '#111827';
-              ctx.font = '32px Tahoma';
-              const lines = text.split(/\n/).slice(0, 18);
-              lines.forEach((line, i) => ctx.fillText(line, 40, 60 + i * 40));
-              const blob = dataUrlToBlob(canvas.toDataURL('image/jpeg', 0.9));
-              downloadBlob(blob, 'word-to-jpg.jpg');
+              canvas.height = Math.max(700, 120 + lines.length * lineHeight);
+              context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
+              context.fillStyle = '#111827'; context.font = fontSize + 'px Tahoma, "Segoe UI", sans-serif';
+              const rtl = /[\u0590-\u08FF]/.test(text);
+              context.direction = rtl ? 'rtl' : 'ltr';
+              context.textAlign = rtl ? 'right' : 'left';
+              lines.forEach((line, index) => context.fillText(line, rtl ? canvas.width - 40 : 40, 80 + index * lineHeight));
+              const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+              if (!blob) throw new Error('تعذر إنشاء صورة JPG.');
+              downloadBlob(blob, file.name.replace(/\.docx$/i, '') + '.jpg');
               outputText.value = text;
-              updateStatus('تم تحويل النص داخل Word إلى صورة JPG.', true);
-              fileInput.value = '';
+              updateStatus('تم تصدير نص DOCX إلى JPG؛ تنسيق المستند الأصلي غير محفوظ.', true);
+              canvas.width = 1; canvas.height = 1;
             });
             fileInput.click();
             break;
@@ -1337,31 +1362,30 @@
           }
 
           case 'html-to-pdf': {
-            const html = await promptForText('أدخل نص HTML لتحويله إلى PDF:', '<h1>مرحبا بالعالم</h1><p>نص تجريبي.</p>');
-            if (html === null) return;
-            const pdf = new window.jspdf.jsPDF();
-            pdf.setFontSize(12);
-            const plain = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-            const lines = pdf.splitTextToSize(plain, 180);
-            pdf.text(lines, 10, 10);
-            pdf.save('html-to-pdf.pdf');
+            const sourceHtml = await promptForText('أدخل كود HTML. سيتم استخراج النص الظاهر فقط دون CSS أو صور:', outputText.value || '<h1>مرحبا بالعالم</h1><p>نص تجريبي.</p>');
+            if (sourceHtml === null) return;
+            const parsed = new DOMParser().parseFromString(sourceHtml, 'text/html');
+            const plain = (parsed.body?.textContent || '').replace(/\s+/g, ' ').trim();
+            if (!plain) throw new Error('لم يتم العثور على نص داخل HTML.');
+            const blob = textToPdfBlob(plain, 'HTML text export');
+            downloadBlob(blob, 'html-text-export.pdf');
             outputText.value = plain;
-            updateStatus('تم إنشاء PDF من HTML.', true);
+            updateStatus('تم تصدير النص المستخرج من HTML إلى PDF؛ لا يتم الاحتفاظ بالتنسيق أو الصور.', true);
             break;
           }
 
           case 'pdf-to-html': {
-            fileInput.accept = '.pdf';
+            fileInput.accept = '.pdf,application/pdf';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await extractPdfText(file);
-              const html = `<html><body><h1>PDF to HTML</h1><p>${(text || 'No text found').replace(/\n/g, '<br>')}</p></body></html>`;
-              const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-              downloadBlob(blob, 'pdf-to-html.html');
-              outputText.value = html;
-              updateStatus('تم تحويل PDF إلى HTML.', true);
-              fileInput.value = '';
+              if (!text) throw new Error('لم يتم العثور على نص في PDF؛ قد يكون الملف فارغا أو محميا.');
+              const escapedText = ImageToTextUtils.escapeHtml(text).replace(/\r?\n/g, '<br>\n');
+              const htmlDocument = '<!doctype html><html lang="ar" dir="auto"><meta charset="utf-8"><title>PDF text export</title><body><main><h1>PDF text export</h1><p>' + escapedText + '</p></main></body></html>';
+              downloadBlob(new Blob([htmlDocument], { type: 'text/html;charset=utf-8' }), file.name.replace(/\.pdf$/i, '') + '.html');
+              outputText.value = htmlDocument;
+              updateStatus('تم تصدير نص PDF إلى HTML آمن؛ لا يتم الاحتفاظ بتخطيط الصفحات الأصلي.', true);
             });
             fileInput.click();
             break;
@@ -1390,54 +1414,72 @@
           }
 
           case 'word-to-excel': {
-            fileInput.accept = '.doc,.docx';
+            fileInput.accept = '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const text = await readDocxText(file) || 'نص من ملف Word';
-              const rows = text.split(/\n+/).map((line) => [line.trim()]).filter((row) => row[0]);
-              const sheet = XLSX.utils.aoa_to_sheet(rows.length ? rows : [['No text found']]);
+              const text = await readDocxText(file);
+              const rows = text.split(/\r?\n/).map(line => [line.trim()]).filter(row => row[0]);
+              if (!rows.length) throw new Error('لم يتم العثور على فقرات نصية في DOCX.');
+              const worksheet = XLSX.utils.aoa_to_sheet(rows);
               const workbook = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(workbook, sheet, 'Word');
-              XLSX.writeFile(workbook, 'word-to-excel.xlsx');
+              XLSX.utils.book_append_sheet(workbook, worksheet, 'DOCX text');
+              XLSX.writeFile(workbook, file.name.replace(/\.docx$/i, '') + '.xlsx');
               outputText.value = text;
-              updateStatus('تم تحويل ملف Word إلى Excel.', true);
-              fileInput.value = '';
+              updateStatus('تم تصدير فقرات DOCX إلى صفوف Excel؛ لا يتم تحويل جداول Word أو تنسيقه الأصلي.', true);
             });
             fileInput.click();
             break;
           }
 
           case 'ppt-to-pdf': {
-            fileInput.accept = '.ppt,.pptx';
+            fileInput.accept = '.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const text = `PowerPoint: ${file.name}\nمحتوى الملف لا يزال غير معالج بالكامل داخل المتصفح ولكن الملف تم إعداده للتصدير كملف PDF نصي.`;
-              const blob = textToPdfBlob(text);
-              downloadBlob(blob, 'ppt-to-pdf.pdf');
+              if (!/\.pptx$/i.test(file.name)) throw new Error('يدعم هذا التحويل PPTX فقط؛ ملفات PPT القديمة غير مدعومة.');
+              if (!window.JSZip) throw new Error('مكتبة ZIP المحلية غير متاحة.');
+              const archive = await JSZip.loadAsync(await file.arrayBuffer());
+              const paths = Object.keys(archive.files)
+                .filter(path => /^ppt\/slides\/slide\d+\.xml$/i.test(path))
+                .sort((a,b) => Number(a.match(/slide(\d+)/i)[1]) - Number(b.match(/slide(\d+)/i)[1]));
+              if (!paths.length) throw new Error('لم يتم العثور على شرائح قابلة للقراءة داخل PPTX.');
+              const namespace = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+              const output = [];
+              for (let i = 0; i < paths.length; i += 1) {
+                updateStatus('يجري استخراج نص الشريحة ' + (i + 1) + ' من ' + paths.length + '...', false);
+                const xml = await archive.file(paths[i]).async('string');
+                const doc = new DOMParser().parseFromString(xml, 'application/xml');
+                if (doc.querySelector('parsererror')) throw new Error('تعذر قراءة XML للشريحة ' + (i + 1) + '.');
+                const paragraphs = Array.from(doc.getElementsByTagNameNS(namespace, 'p'))
+                  .map(p => Array.from(p.getElementsByTagNameNS(namespace, 't')).map(t => t.textContent || '').join(''))
+                  .filter(text => text.trim());
+                output.push('الشريحة ' + (i + 1), ...paragraphs, '');
+              }
+              const text = output.join('\n').trim();
+              if (!text) throw new Error('لم يتم العثور على نص داخل الشرائح.');
+              const blob = textToPdfBlob(text, 'PPTX slide text export');
+              downloadBlob(blob, file.name.replace(/\.pptx$/i, '') + '-text.pdf');
               outputText.value = text;
-              updateStatus('تم إنشاء PDF من ملف PowerPoint النصي.', true);
-              fileInput.value = '';
+              updateStatus('تم استخراج نصوص الشرائح إلى PDF؛ التصميم والصور والرسوم غير مضمنة.', true);
             });
             fileInput.click();
             break;
           }
 
           case 'csv-to-excel': {
-            fileInput.accept = '.csv,.txt';
+            fileInput.accept = '.csv,text/csv,.txt';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const text = await file.text();
-              const rows = text.split(/\r?\n/).map((line) => line.split(','));
+              const rows = ImageToTextUtils.parseCsv(await file.text());
+              if (!rows.length) throw new Error('ملف CSV فارغ أو لا يحتوي على صفوف صالحة.');
               const sheet = XLSX.utils.aoa_to_sheet(rows);
               const workbook = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(workbook, sheet, 'CSV');
-              XLSX.writeFile(workbook, 'csv-to-excel.xlsx');
-              outputText.value = text;
-              updateStatus('تم تحويل CSV إلى Excel.', true);
-              fileInput.value = '';
+              XLSX.writeFile(workbook, file.name.replace(/\.(csv|txt)$/i, '') + '.xlsx');
+              outputText.value = rows.map(row => row.join(' | ')).join('\n');
+              updateStatus('تم استيراد ' + rows.length + ' صفا إلى Excel مع احترام الاقتباسات والفواصل.', true);
             });
             fileInput.click();
             break;
