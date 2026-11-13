@@ -634,7 +634,7 @@
         { id: 'merge-pdf', name: 'Merge PDF', desc: 'دمج ملفات PDF في ملف واحد.' },
         { id: 'jpg-to-excel', name: 'Image OCR to Excel', desc: 'تحويل أسطر النص المكتشف عبر OCR إلى صفوف Excel.' },
         { id: 'qr-code-generator', name: 'QR Code Generator', desc: 'إنشاء كود QR من نص أو رابط.' },
-        { id: 'word-to-jpg', name: 'Word to JPG', desc: 'تحويل Word إلى صور JPG.' },
+        { id: 'word-to-jpg', name: 'Word to JPG', desc: 'تصدير نص DOCX إلى صورة JPG أو صفحات متعددة داخل ZIP دون تنسيق المستند الأصلي.' },
         { id: 'pdf-to-excel', name: 'PDF Text to Excel', desc: 'استخراج النص ومحاولة فصل الأعمدة تقريبياً إلى Excel.' },
         { id: 'barcode-scanner', name: 'Barcode Scanner', desc: 'قراءة QR وأنواع باركود متعددة من الصور.' },
         { id: 'excel-to-jpg', name: 'Excel to JPG', desc: 'تصيير بيانات أوراق Excel إلى صور JPG ضمن ملف ZIP.' },
@@ -1304,8 +1304,12 @@
           case 'text-to-word': {
             const text = await promptForText('أدخل النص الذي تريد تحويله إلى Word:', outputText.value || 'مرحبا بالعالم');
             if (text === null) return;
+            if (!text.trim()) throw new Error('أدخل نصاً قبل إنشاء مستند Word.');
             const { Document, Packer, Paragraph, TextRun } = window.docx;
-            const doc = new Document({ sections: [{ children: [new Paragraph({ children: [new TextRun({ text })] })] }] });
+            const paragraphs = text.split(/\r?\n/).map((line) =>
+              new Paragraph({ children: [new TextRun({ text: line })] })
+            );
+            const doc = new Document({ sections: [{ children: paragraphs }] });
             const blob = await Packer.toBlob(doc);
             downloadBlob(blob, 'text-to-word.docx');
             outputText.value = text;
@@ -1458,35 +1462,32 @@
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await readDocxText(file);
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d');
-              const fontSize = 30, lineHeight = 46, maxWidth = 1120;
-              context.font = fontSize + 'px Tahoma, "Segoe UI", sans-serif';
-              const lines = [];
-              text.split(/\r?\n/).forEach(paragraph => {
-                let line = '';
-                paragraph.split(/\s+/).filter(Boolean).forEach(word => {
-                  const candidate = line ? line + ' ' + word : word;
-                  if (line && context.measureText(candidate).width > maxWidth) {
-                    lines.push(line); line = word;
-                  } else line = candidate;
-                });
-                if (line) lines.push(line);
-              });
-              canvas.width = 1200;
-              canvas.height = Math.max(700, 120 + lines.length * lineHeight);
-              context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
-              context.fillStyle = '#111827'; context.font = fontSize + 'px Tahoma, "Segoe UI", sans-serif';
-              const rtl = /[\u0590-\u08FF]/.test(text);
-              context.direction = rtl ? 'rtl' : 'ltr';
-              context.textAlign = rtl ? 'right' : 'left';
-              lines.forEach((line, index) => context.fillText(line, rtl ? canvas.width - 40 : 40, 80 + index * lineHeight));
-              const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-              if (!blob) throw new Error('تعذر إنشاء صورة JPG.');
-              downloadBlob(blob, file.name.replace(/\.docx$/i, '') + '.jpg');
+              if (!text.trim()) throw new Error('لم يتم العثور على نص داخل مستند DOCX.');
+              const title = file.name.replace(/\.docx$/i, '') || 'DOCX text';
+              const pages = renderTextCanvases(text, { title, fontSize: 29, lineHeight: 43 });
+              const baseName = file.name.replace(/\.docx$/i, '') || 'word';
+              if (pages.length === 1) {
+                const blob = await new Promise((resolve) => pages[0].toBlob(resolve, 'image/jpeg', 0.92));
+                pages[0].width = 1;
+                pages[0].height = 1;
+                if (!blob) throw new Error('تعذر إنشاء صورة JPG.');
+                downloadBlob(blob, baseName + '.jpg');
+                updateStatus('تم تصدير نص DOCX إلى صورة JPG واحدة؛ تنسيق Word الأصلي وصوره غير محفوظة.', true);
+              } else {
+                if (!window.JSZip) throw new Error('مكتبة ZIP المحلية غير متاحة لتجميع الصفحات.');
+                const archive = new JSZip();
+                for (let index = 0; index < pages.length; index += 1) {
+                  const blob = await new Promise((resolve) => pages[index].toBlob(resolve, 'image/jpeg', 0.92));
+                  if (!blob) throw new Error('تعذر إنشاء صورة الصفحة ' + (index + 1) + '.');
+                  archive.file(baseName + '-page-' + String(index + 1).padStart(3, '0') + '.jpg', blob);
+                  pages[index].width = 1;
+                  pages[index].height = 1;
+                }
+                const zip = await archive.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+                downloadBlob(zip, baseName + '-pages.zip');
+                updateStatus('تم تقسيم نص DOCX إلى ' + pages.length + ' صور JPG داخل ZIP؛ تنسيق Word الأصلي وصوره غير محفوظة.', true);
+              }
               outputText.value = text;
-              updateStatus('تم تصدير نص DOCX إلى JPG؛ تنسيق المستند الأصلي غير محفوظ.', true);
-              canvas.width = 1; canvas.height = 1;
             });
             fileInput.click();
             break;
