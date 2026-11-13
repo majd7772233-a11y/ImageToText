@@ -935,34 +935,35 @@
           }
 
           case 'image-translator': {
-            const text = await promptForText('اكتب النص المراد ترجمته:', outputText.value || 'مرحبا بالعالم');
-            if (text === null) return;
-            const map = {
-              hello: 'مرحبا',
-              world: 'بالعالم',
-              welcome: 'مرحبا',
-              name: 'اسم',
-              file: 'ملف',
-              image: 'صورة',
-              text: 'نص',
-              convert: 'تحويل',
-              document: 'مستند',
-              pdf: 'بي دي إف',
-              qr: 'رمز الاستجابة السريعة',
-              code: 'كود',
-              scan: 'مسح',
-              read: 'قراءة',
-              good: 'جيد',
-              yes: 'نعم',
-              no: 'لا'
-            };
-            const translated = text
-              .toLowerCase()
-              .split(/\s+/)
-              .map((word) => map[word] || word)
-              .join(' ');
-            outputText.value = translated;
-            updateStatus('تمت ترجمة النص محليا باستخدام قاموس بسيط داخل المتصفح.', true);
+            fileInput.accept = 'image/*';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              updateStatus('يجري استخراج النص من الصورة...', false);
+              const sourceText = await imageToText(file);
+              if (!sourceText) {
+                outputText.value = '';
+                updateStatus('لم يتم العثور على نص قابل للترجمة في الصورة.', false);
+                return;
+              }
+              const dictionary = {
+                hello:'مرحبا', world:'العالم', welcome:'أهلا', name:'اسم',
+                file:'ملف', image:'صورة', text:'نص', convert:'تحويل',
+                document:'مستند', pdf:'بي دي إف', qr:'رمز الاستجابة السريعة',
+                code:'رمز', scan:'مسح', read:'قراءة', good:'جيد',
+                yes:'نعم', no:'لا', thank:'شكرا', thanks:'شكرا',
+                school:'مدرسة', book:'كتاب', computer:'حاسوب', water:'ماء',
+                help:'مساعدة', welcome:'مرحبا', open:'افتح', close:'أغلق'
+              };
+              const result = ImageToTextUtils.translateWithDictionary(sourceText, dictionary);
+              outputText.value = result.text;
+              updateStatus(
+                'تم OCR. ترجمت ' + result.translatedWords + ' من ' + result.totalWords +
+                ' كلمة بقاموس محلي محدود؛ بقيت ' + result.unsupportedWords.length + ' كلمة دون ترجمة.',
+                result.translatedWords > 0
+              );
+            });
+            fileInput.click();
             break;
           }
 
@@ -1009,23 +1010,37 @@
           }
 
           case 'pdf-to-jpg': {
-            fileInput.accept = '.pdf';
+            fileInput.accept = '.pdf,application/pdf';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
+              if (!window.JSZip) throw new Error('مكتبة ZIP المحلية غير متاحة.');
               const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-              const page = await pdf.getPage(1);
-              const viewport = page.getViewport({ scale: 1.5 });
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              await page.render({ canvasContext: ctx, viewport }).promise;
-              const blob = dataUrlToBlob(canvas.toDataURL('image/jpeg', 0.9));
-              downloadBlob(blob, 'page-1.jpg');
-              outputText.value = 'تم تحويل أول صفحة من PDF إلى JPG.';
-              updateStatus('تم تحويل أول صفحة PDF إلى صورة JPG.', true);
-              fileInput.value = '';
+              const archive = new JSZip();
+              for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+                updateStatus('يجري تحويل الصفحة ' + pageNumber + ' من ' + pdf.numPages + '...', false);
+                const page = await pdf.getPage(pageNumber);
+                const viewport = page.getViewport({ scale: 1.6 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = Math.ceil(viewport.width);
+                canvas.height = Math.ceil(viewport.height);
+                await page.render({ canvasContext: context, viewport }).promise;
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+                if (!blob) throw new Error('تعذر إنشاء صورة للصفحة ' + pageNumber + '.');
+                const pageName = 'page-' + String(pageNumber).padStart(3, '0') + '.jpg';
+                archive.file(pageName, blob);
+                canvas.width = 1;
+                canvas.height = 1;
+              }
+              const zipBlob = await archive.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 3 }
+              });
+              downloadBlob(zipBlob, file.name.replace(/\.pdf$/i, '') + '-pages.zip');
+              outputText.value = 'تم تحويل جميع صفحات الملف (' + pdf.numPages + ') إلى صور JPG داخل ZIP.';
+              updateStatus('تم تحويل ' + pdf.numPages + ' صفحة إلى صور JPG وتنزيلها داخل ملف ZIP.', true);
             });
             fileInput.click();
             break;
@@ -1166,21 +1181,15 @@
           }
 
           case 'word-to-pdf': {
-            fileInput.accept = '.doc,.docx';
+            fileInput.accept = '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              let text = '';
-              if (file.name.toLowerCase().endsWith('.docx')) {
-                text = await readDocxText(file) || 'تم تحويل ملف Word إلى نص محلي.';
-              } else {
-                text = 'تم تحويل ملف Word إلى نص محلي.';
-              }
-              const blob = textToPdfBlob(text);
-              downloadBlob(blob, 'word-to-pdf.pdf');
+              const text = await readDocxText(file);
+              const blob = textToPdfBlob(text, 'DOCX text export');
+              downloadBlob(blob, file.name.replace(/\.docx$/i, '') + '.pdf');
               outputText.value = text;
-              updateStatus('تم تحويل الملف Word إلى PDF.', true);
-              fileInput.value = '';
+              updateStatus('تم تصدير نص DOCX إلى PDF؛ لم يتم الاحتفاظ بتخطيط المستند أو صوره.', true);
             });
             fileInput.click();
             break;
@@ -1236,65 +1245,25 @@
           }
 
           case 'qr-code-generator': {
-            const text = await promptForText('أدخل النص أو الرابط لإنشاء QR Code:', 'https://example.com');
-            if (text === null) return;
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const size = 360;
-            const cell = 12;
-            const matrixSize = 21;
-            const matrix = Array.from({ length: matrixSize }, () => Array(matrixSize).fill(0));
-
-            function addFinderPattern(offsetX, offsetY) {
-              for (let y = 0; y < 7; y += 1) {
-                for (let x = 0; x < 7; x += 1) {
-                  const inBorder = x === 0 || x === 6 || y === 0 || y === 6;
-                  const inCenter = x >= 2 && x <= 4 && y >= 2 && y <= 4;
-                  matrix[offsetY + y][offsetX + x] = inBorder || inCenter ? 1 : 0;
-                }
-              }
+            const value = await promptForText('أدخل النص أو الرابط لإنشاء رمز QR:', outputText.value || 'https://example.com');
+            if (value === null) return;
+            const payload = value.trim();
+            if (!payload) {
+              updateStatus('أدخل نصا أو رابطا أولا.', false);
+              return;
             }
-
-            addFinderPattern(0, 0);
-            addFinderPattern(0, matrixSize - 7);
-            addFinderPattern(matrixSize - 7, 0);
-
-            for (let y = 0; y < matrixSize; y += 1) {
-              for (let x = 0; x < matrixSize; x += 1) {
-                const isFinderArea =
-                  (x < 7 && y < 7) ||
-                  (x < 7 && y >= matrixSize - 7) ||
-                  (x >= matrixSize - 7 && y < 7) ||
-                  (x >= 0 && x < 1 && y >= 0 && y < matrixSize) ||
-                  (x >= matrixSize - 1 && y >= 0 && y < matrixSize) ||
-                  (x >= 0 && x < matrixSize && y >= 0 && y < 1) ||
-                  (x >= 0 && x < matrixSize && y >= matrixSize - 1 && y < matrixSize);
-                if (!isFinderArea) {
-                  const hash = [...text].reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                  matrix[y][x] = ((hash + x * 17 + y * 13 + text.length * 5) % 2 === 0) ? 1 : 0;
-                }
-              }
+            if (!window.QRCode || typeof QRCode.toDataURL !== 'function') {
+              throw new Error('مكتبة QR المحلية غير متاحة.');
             }
-
-            canvas.width = size;
-            canvas.height = size;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, size, size);
-            const margin = 30;
-            const scale = (size - margin * 2) / matrixSize;
-            for (let y = 0; y < matrixSize; y += 1) {
-              for (let x = 0; x < matrixSize; x += 1) {
-                if (matrix[y][x]) {
-                  ctx.fillStyle = '#111827';
-                  ctx.fillRect(margin + x * scale, margin + y * scale, scale, scale);
-                }
-              }
-            }
-
-            const blob = dataUrlToBlob(canvas.toDataURL('image/png'));
-            downloadBlob(blob, 'qr-code.png');
-            outputText.value = text;
-            updateStatus('تم إنشاء رمز QR بنجاح.', true);
+            const dataUrl = await QRCode.toDataURL(payload, {
+              errorCorrectionLevel: 'H',
+              margin: 4,
+              width: 960,
+              color: { dark: '#111827', light: '#FFFFFFFF' }
+            });
+            downloadBlob(dataUrlToBlob(dataUrl), 'qr-code.png');
+            outputText.value = payload;
+            updateStatus('تم إنشاء رمز QR قياسي قابل للمسح.', true);
             break;
           }
 
@@ -1325,102 +1294,43 @@
           }
 
           case 'pdf-to-excel': {
-            fileInput.accept = '.pdf';
+            fileInput.accept = '.pdf,application/pdf';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const text = await extractPdfText(file);
-              const rows = text
-                .split(/\n+/)
-                .map((line) => [line.replace(/\s+/g, ' ').trim()])
-                .filter((row) => row[0]);
-              const sheet = XLSX.utils.aoa_to_sheet(rows.length ? rows : [['No text found']]);
+              const pages = await extractPdfPages(file, true);
+              const rows = pages.flatMap((page) => page.rows);
+              if (!rows.length) throw new Error('لم يتم العثور على نص أو جداول قابلة للاستخراج.');
+              const sheet = XLSX.utils.aoa_to_sheet(rows);
               const workbook = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(workbook, sheet, 'PDF');
-              XLSX.writeFile(workbook, 'pdf-to-excel.xlsx');
-              outputText.value = text || 'لم يتم العثور على نص في ملف PDF.';
-              updateStatus('تم تحويل PDF إلى Excel.', true);
-              fileInput.value = '';
-            });
-            fileInput.click();
-            break;
-          }
-
-          case 'barcode-scanner': {
-            fileInput.accept = 'image/*';
-            fileInput.onchange = safeFileHandler(async (event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              const img = new Image();
-              img.src = URL.createObjectURL(file);
-              await img.decode();
-              const canvas = document.createElement('canvas');
-              canvas.width = img.width;
-              canvas.height = img.height;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0);
-              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              try {
-                const reader = new ZXing.BrowserBarcodeReader();
-                const result = await reader.decodeFromImageElement(img);
-                outputText.value = result?.text || 'لم يتم العثور على باركود.';
-                updateStatus(result?.text ? 'تم قراءة الباركود بنجاح.' : 'لم يتم العثور على باركود.', result?.text ? true : false);
-              } catch (error) {
-                outputText.value = 'لم يتم العثور على باركود أو لا يدعم الصورة هذا النوع.';
-                updateStatus('تعذر قراءة الباركود من الصورة.', false);
-              }
-              fileInput.value = '';
-            });
-            fileInput.click();
-            break;
-          }
-
-          case 'excel-to-jpg': {
-            fileInput.accept = '.xlsx,.xls,.csv';
-            fileInput.onchange = safeFileHandler(async (event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              const data = await file.arrayBuffer();
-              const workbook = XLSX.read(data, { type: 'array' });
-              const sheet = workbook.Sheets[workbook.SheetNames[0]];
-              const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = 1200;
-              canvas.height = 800;
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.fillStyle = '#111827';
-              ctx.font = '20px Tahoma';
-              rows.slice(0, 20).forEach((row, index) => {
-                const text = Array.isArray(row) ? row.join(' | ') : String(row || '');
-                ctx.fillText(text, 30, 40 + index * 28);
-              });
-              const blob = dataUrlToBlob(canvas.toDataURL('image/jpeg', 0.9));
-              downloadBlob(blob, 'excel-to-jpg.jpg');
-              outputText.value = rows.slice(0, 10).map((row) => Array.isArray(row) ? row.join(' | ') : row).join('\n');
-              updateStatus('تم تحويل بيانات Excel إلى صورة JPG.', true);
-              fileInput.value = '';
+              XLSX.writeFile(workbook, file.name.replace(/\.pdf$/i, '') + '.xlsx');
+              outputText.value = rows.map((row) => row.join(' | ')).join('\n');
+              const hasColumns = rows.some((row) => row.length > 1);
+              updateStatus(hasColumns
+                ? 'تم تصدير صفوف وأعمدة تقريبية إلى Excel؛ راجع الجداول المعقدة يدويا.'
+                : 'تم تصدير النص إلى عمود Excel واحد؛ لم يتم اكتشاف أعمدة جدولية متعددة.', true);
             });
             fileInput.click();
             break;
           }
 
           case 'pdf-to-csv': {
-            fileInput.accept = '.pdf';
+            fileInput.accept = '.pdf,application/pdf';
             fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
-              const text = await extractPdfText(file);
-              const rows = text
-                .split(/\n+/)
-                .map((line) => line.split(/\s{2,}|,|/).join(','));
-              const csv = rows.join('\n');
-              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-              downloadBlob(blob, 'pdf-to-csv.csv');
-              outputText.value = csv || 'لم يتم العثور على نص في PDF.';
-              updateStatus('تم تحويل PDF إلى CSV.', true);
-              fileInput.value = '';
+              const pages = await extractPdfPages(file, true);
+              const rows = pages.flatMap((page) => page.rows);
+              if (!rows.length) throw new Error('لم يتم العثور على نص أو جداول قابلة للاستخراج.');
+              const csv = ImageToTextUtils.encodeCsv(rows);
+              downloadBlob(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }),
+                file.name.replace(/\.pdf$/i, '') + '.csv');
+              outputText.value = csv;
+              const hasColumns = rows.some((row) => row.length > 1);
+              updateStatus(hasColumns
+                ? 'تم تصدير صفوف وأعمدة تقريبية إلى CSV؛ راجع الجدول لأن تقسيم PDF تقديري.'
+                : 'تم تصدير النص إلى عمود CSV واحد؛ لم يتم التعرف على جدول متعدد الأعمدة.', true);
             });
             fileInput.click();
             break;
