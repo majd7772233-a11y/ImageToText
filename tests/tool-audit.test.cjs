@@ -83,3 +83,20 @@ test("lossy and limited conversion tools identify their true scope", () => {
   assert.match(appScript, /الأوراق الأخرى غير مضمنة/);
   assert.match(appScript, /CSS والصور والتنسيق الأصلي غير مضمنة/);
 });
+
+
+test("the active page loads only local scripts and stylesheets", () => {
+  const scriptRefs = Array.from(html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi), (match) => match[1]);
+  const styleRefs = Array.from(html.matchAll(/<link\b[^>]*\bhref=["']([^"']+\.css)["']/gi), (match) => match[1]);
+  assert.ok(scriptRefs.length > 0);
+  assert.ok(styleRefs.length > 0);
+  assert.ok(scriptRefs.every((value) => value.startsWith("./")), scriptRefs.join("\n"));
+  assert.ok(styleRefs.every((value) => value.startsWith("./")), styleRefs.join("\n"));
+  assert.doesNotMatch(html, /<script\b[^>]*\bsrc=["']https?:\/\//i);
+});
+
+test("legacy trackers and external integrations are not in the active page chain", () => {
+  const scriptRefs = Array.from(html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi), (match) => match[1]);
+  assert.ok(!scriptRefs.some((value) => /general\.js|home\.js|trustpilot|script\/emd|tracker/i.test(value)));
+  assert.doesNotMatch(appScript, /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/);
+});
