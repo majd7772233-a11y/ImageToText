@@ -619,7 +619,7 @@
     </script>
     <script>
       const toolCatalog = [
-        { id: 'image-translator', name: 'Image Translator', desc: 'استخراج النص وترجمة مفردات محددة بقاموس عربي محلي محدود.' },
+        { id: 'image-translator', name: 'OCR + Dictionary', desc: 'استخراج النص وترجمة مفردات محددة بقاموس عربي محلي محدود، وليس ترجمة عامة.' },
         { id: 'pdf-to-word', name: 'PDF Text to Word', desc: 'استخراج النص من PDF وتصديره إلى DOCX دون الصور أو تخطيط الصفحة.' },
         { id: 'jpg-to-word', name: 'Image OCR to Word', desc: 'استخراج النص من الصورة عبر OCR وتصديره إلى DOCX.' },
         { id: 'jpg-to-pdf', name: 'JPG to PDF', desc: 'تحويل الصور إلى ملف PDF.' },
@@ -628,7 +628,7 @@
         { id: 'text-to-pdf', name: 'Text to PDF', desc: 'تحويل النص إلى ملف PDF.' },
         { id: 'text-to-word', name: 'Text to Word', desc: 'تحويل نص عادي إلى Word.' },
         { id: 'invert-image', name: 'Invert Image', desc: 'عكس ألوان الصورة.' },
-        { id: 'text-to-image', name: 'Text to Image', desc: 'تحويل النص إلى صورة.' },
+        { id: 'text-to-image', name: 'Text to Image', desc: 'إنشاء صورة أو صفحات PNG متعددة من النص مع دعم التفاف الأسطر العربية.' },
         { id: 'word-to-pdf', name: 'Word to PDF', desc: 'تحويل مستند Word إلى PDF.' },
         { id: 'pdf-to-jpg', name: 'PDF to JPG', desc: 'تحويل PDF إلى صور JPG.' },
         { id: 'merge-pdf', name: 'Merge PDF', desc: 'دمج ملفات PDF في ملف واحد.' },
@@ -1151,12 +1151,17 @@
               const data = await readImageData(file);
               const img = data.image;
               const pdf = new window.jspdf.jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait' });
-              const width = pdf.internal.pageSize.getWidth();
-              const height = pdf.internal.pageSize.getHeight();
-              pdf.addImage(img, 'JPEG', 0, 0, width, height, undefined, 'FAST');
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const pageHeight = pdf.internal.pageSize.getHeight();
+              const fit = Math.min(pageWidth / img.width, pageHeight / img.height);
+              const imageWidth = img.width * fit;
+              const imageHeight = img.height * fit;
+              const x = (pageWidth - imageWidth) / 2;
+              const y = (pageHeight - imageHeight) / 2;
+              pdf.addImage(data.canvas.toDataURL('image/png'), 'PNG', x, y, imageWidth, imageHeight, undefined, 'FAST');
               pdf.save('image-to-pdf.pdf');
               outputText.value = `تم تحويل الصورة: ${file.name} إلى ملف PDF.`;
-              updateStatus('تم تحويل الصورة إلى PDF بنجاح.', true);
+              updateStatus('تم وضع الصورة داخل صفحة PDF مع الحفاظ على أبعادها ونسبتها الأصلية.', true);
               fileInput.value = '';
             });
             fileInput.click();
@@ -1333,26 +1338,32 @@
           }
 
           case 'text-to-image': {
-            const text = await promptForText('أدخل النص لتحويله إلى صورة:', outputText.value || 'Sample Text');
+            const text = await promptForText('أدخل النص الذي تريد تحويله إلى صورة:', outputText.value || 'اكتب النص هنا');
             if (text === null) return;
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 1200;
-            canvas.height = 700;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0f172a';
-            ctx.font = '36px Tahoma';
-            const lines = text.split(/\s{2,}|\n/).map((line) => line.trim()).filter(Boolean);
-            let y = 90;
-            for (const line of lines) {
-              ctx.fillText(line, 60, y);
-              y += 52;
+            if (!text.trim()) throw new Error('أدخل نصاً قبل إنشاء الصورة.');
+            const pages = renderTextCanvases(text, { title: 'Text Image', fontSize: 30, lineHeight: 44 });
+            if (pages.length === 1) {
+              const blob = await new Promise((resolve) => pages[0].toBlob(resolve, 'image/png'));
+              pages[0].width = 1;
+              pages[0].height = 1;
+              if (!blob) throw new Error('تعذر إنشاء صورة PNG.');
+              downloadBlob(blob, 'text-image.png');
+              updateStatus('تم إنشاء صورة PNG من النص مع التفاف الأسطر ودعم النص العربي.', true);
+            } else {
+              if (!window.JSZip) throw new Error('مكتبة ZIP المحلية غير متاحة لتجميع الصفحات.');
+              const archive = new JSZip();
+              for (let index = 0; index < pages.length; index += 1) {
+                const blob = await new Promise((resolve) => pages[index].toBlob(resolve, 'image/png'));
+                if (!blob) throw new Error('تعذر إنشاء صورة الصفحة ' + (index + 1) + '.');
+                archive.file('text-image-page-' + String(index + 1).padStart(3, '0') + '.png', blob);
+                pages[index].width = 1;
+                pages[index].height = 1;
+              }
+              const zip = await archive.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+              downloadBlob(zip, 'text-images.zip');
+              updateStatus('تم تقسيم النص إلى ' + pages.length + ' صور PNG وتنزيلها داخل ZIP.', true);
             }
-            const blob = dataUrlToBlob(canvas.toDataURL('image/png'));
-            downloadBlob(blob, 'text-image.png');
             outputText.value = text;
-            updateStatus('تم إنشاء صورة من النص.', true);
             break;
           }
 
