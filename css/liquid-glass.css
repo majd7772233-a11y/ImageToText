@@ -1481,3 +1481,200 @@ button:disabled {
     background-color: #121d34;
   }
 }
+
+
+/* Liquid Glass Studio: tool-library contrast and interaction correction.
+   .tool-section in home.css paints the former light theme; this more specific
+   selector replaces that opaque surface with the same dark L1 glass language. */
+.tool-section.library-section {
+  position: relative;
+  margin: 0;
+  padding: clamp(18px, 2.2vw, 30px);
+  overflow: hidden;
+  border: 1px solid rgba(194, 217, 255, 0.18);
+  border-radius: 29px;
+  background:
+    radial-gradient(ellipse at 88% 0%, rgba(117,130,255,.15), transparent 38%),
+    radial-gradient(ellipse at 5% 96%, rgba(70,205,220,.1), transparent 34%),
+    linear-gradient(145deg, rgba(24,37,65,.54), rgba(10,19,37,.42)) !important;
+  -webkit-backdrop-filter: blur(27px) saturate(150%);
+  backdrop-filter: blur(27px) saturate(150%);
+  box-shadow: 0 22px 58px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(120,164,224,.08);
+  isolation: isolate;
+}
+.tool-section.library-section::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 1px 12% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(227,241,255,.46), transparent);
+  pointer-events: none;
+}
+.tool-section.library-section::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 340px;
+  height: 220px;
+  inset: auto auto -150px -90px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(85,205,225,.13), transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+.tool-section.library-section > * { position: relative; z-index: 1; }
+
+.library-section .section-kicker { color: #a7b8da; }
+.library-section .section-heading h2 {
+  color: #f4f7ff;
+  text-shadow: 0 2px 18px rgba(104,134,214,.14);
+}
+.library-section .section-description { color: #b1c1dc; }
+.library-section .category-chips { gap: 9px; margin: 0 0 19px; }
+
+.library-section .category-chip {
+  min-height: 37px;
+  padding: 5px 15px;
+  border-color: rgba(196,218,255,.2);
+  background: linear-gradient(145deg, rgba(255,255,255,.08), transparent 72%), rgba(14,25,47,.62);
+  color: #c7d5ec;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+.library-section .category-chip:hover {
+  border-color: rgba(168,203,255,.44);
+  background: linear-gradient(145deg, rgba(166,184,255,.18), transparent 72%), rgba(38,54,89,.75);
+  color: #f6f8ff;
+}
+.library-section .category-chip.is-active {
+  border-color: rgba(173,202,255,.54);
+  background: linear-gradient(120deg, rgba(136,137,255,.3), rgba(80,196,211,.16)), rgba(35,49,83,.8);
+  color: #fff;
+  box-shadow: 0 7px 20px rgba(85,115,213,.16), inset 0 1px 0 rgba(255,255,255,.2);
+}
+
+.library-section .tool-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr));
+  align-items: stretch;
+  gap: 13px;
+}
+.library-section .tool-card {
+  --tool-accent-rgb: 139,153,255;
+  position: relative;
+  min-width: 0;
+  min-height: 104px;
+  gap: 13px;
+  padding: 16px 15px;
+  border: 1px solid rgba(198,220,255,.2);
+  border-radius: 19px;
+  background:
+    radial-gradient(240px circle at var(--pointer-x,88%) var(--pointer-y,8%), rgba(var(--tool-accent-rgb),.19), transparent 72%),
+    linear-gradient(145deg, rgba(255,255,255,.1), transparent 44%),
+    linear-gradient(145deg, rgba(34,49,82,.8), rgba(16,28,51,.76));
+  box-shadow: 0 10px 25px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.15), inset 0 -1px 0 rgba(132,171,229,.09);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  cursor: pointer;
+  text-align: start;
+  isolation: isolate;
+  transition: transform 220ms cubic-bezier(.2,.8,.2,1), border-color 180ms ease, box-shadow 220ms ease, filter 180ms ease;
+}
+.library-section .tool-card[data-category="images"] { --tool-accent-rgb: 83,211,225; }
+.library-section .tool-card[data-category="pdf"] { --tool-accent-rgb: 143,151,255; }
+.library-section .tool-card[data-category="office"] { --tool-accent-rgb: 183,154,255; }
+.library-section .tool-card[data-category="codes"] { --tool-accent-rgb: 107,224,183; }
+
+.library-section .tool-card::before {
+  z-index: -1;
+  opacity: .9;
+  background:
+    radial-gradient(190px circle at var(--pointer-x,84%) var(--pointer-y,8%), rgba(237,247,255,.18), transparent 74%),
+    linear-gradient(135deg, rgba(255,255,255,.14), transparent 24%, transparent 72%, rgba(var(--tool-accent-rgb),.13));
+  transition: opacity 180ms ease;
+}
+.library-section .tool-card::after {
+  left: 14px;
+  top: 13px;
+  color: rgba(205,222,250,.7);
+  text-shadow: 0 0 12px rgba(var(--tool-accent-rgb),.3);
+}
+.library-section .tool-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(var(--tool-accent-rgb),.62);
+  background:
+    radial-gradient(260px circle at var(--pointer-x,82%) var(--pointer-y,8%), rgba(var(--tool-accent-rgb),.27), transparent 72%),
+    linear-gradient(145deg, rgba(255,255,255,.15), transparent 48%),
+    linear-gradient(145deg, rgba(40,58,98,.92), rgba(18,33,59,.88));
+  box-shadow: 0 18px 38px rgba(0,0,0,.26), 0 0 0 1px rgba(var(--tool-accent-rgb),.1), 0 0 28px rgba(var(--tool-accent-rgb),.12), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.library-section .tool-card:hover::before { opacity: 1; }
+.library-section .tool-card:active { transform: translateY(-1px) scale(.99); filter: brightness(1.08); }
+.library-section .tool-card.active,
+.library-section .tool-card[aria-pressed="true"] {
+  border-color: rgba(var(--tool-accent-rgb),.7);
+  background: radial-gradient(260px circle at var(--pointer-x,82%) var(--pointer-y,8%), rgba(var(--tool-accent-rgb),.22), transparent 72%), linear-gradient(145deg, rgba(139,156,235,.21), transparent 60%), rgba(28,45,76,.88);
+  box-shadow: 0 0 0 1px rgba(var(--tool-accent-rgb),.15), 0 13px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.22);
+}
+
+.library-section .tool-card-icon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-color: rgba(218,233,255,.3);
+  border-radius: 16px;
+  background: radial-gradient(circle at 30% 18%, rgba(255,255,255,.3), transparent 54%), linear-gradient(145deg, rgba(var(--tool-accent-rgb),.35), rgba(var(--tool-accent-rgb),.1)), rgba(31,48,81,.82);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.27), inset 0 -1px 0 rgba(var(--tool-accent-rgb),.22), 0 8px 17px rgba(0,0,0,.18);
+  color: #f5f8ff;
+  font-size: 17px;
+  font-weight: 750;
+  text-shadow: 0 1px 12px rgba(var(--tool-accent-rgb),.4);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.library-section .tool-card:hover .tool-card-icon {
+  transform: translateY(-1px) rotate(-3deg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.34), 0 0 22px rgba(var(--tool-accent-rgb),.2), 0 9px 18px rgba(0,0,0,.22);
+}
+.library-section .tool-card-copy { gap: 6px; }
+.library-section .tool-card strong {
+  color: #f4f7ff;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+  text-shadow: 0 1px 12px rgba(125,151,207,.14);
+}
+.library-section .tool-card small {
+  color: #c0cee4;
+  font-size: 11px;
+  line-height: 1.6;
+  -webkit-line-clamp: 2;
+}
+.library-section .tool-card:focus-visible,
+.library-section .category-chip:focus-visible {
+  outline: 2px solid rgba(157,204,255,.96);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(105,162,245,.22), 0 16px 34px rgba(0,0,0,.24);
+}
+.library-section .empty-search-state {
+  margin-top: 16px;
+  border-color: rgba(190,213,255,.3);
+  background: rgba(9,18,35,.4);
+  color: #d0dcf0;
+}
+@media (max-width: 680px) {
+  .tool-section.library-section { padding: 16px 12px; border-radius: 22px; }
+  .library-section .tool-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+  .library-section .tool-card { min-height: 94px; gap: 9px; padding: 12px 10px; border-radius: 16px; }
+  .library-section .tool-card-icon { width: 38px; height: 38px; flex-basis: 38px; border-radius: 13px; font-size: 14px; }
+  .library-section .tool-card strong { font-size: 10px; }
+  .library-section .tool-card small { font-size: 9px; }
+}
+@media (max-width: 390px) {
+  .library-section .tool-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .library-section .tool-card:hover,
+  .library-section .tool-card:hover .tool-card-icon { transform: none; }
+}

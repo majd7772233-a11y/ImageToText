@@ -90,6 +90,20 @@
       if (description) copy.appendChild(description);
       card.replaceChildren(icon, copy);
       card.setAttribute("aria-label", tool.name + " — " + tool.desc);
+      card.setAttribute("aria-pressed", "false");
+      card.addEventListener("pointermove", function (event) {
+        if (event.pointerType === "touch") return;
+        const rect = card.getBoundingClientRect();
+        const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+        const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+        card.style.setProperty("--pointer-x", x.toFixed(1) + "%");
+        card.style.setProperty("--pointer-y", y.toFixed(1) + "%");
+      });
+      card.addEventListener("pointerleave", function () {
+        card.style.removeProperty("--pointer-x");
+        card.style.removeProperty("--pointer-y");
+      });
+
     });
   }
 
@@ -174,6 +188,13 @@
     if (homeButton) homeButton.classList.remove("is-active");
     nav.querySelectorAll(".sidebar-tool").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.toolNav === tool.id);
+    });
+    tools.forEach((item) => {
+      const card = grid.querySelector('[data-tool="' + item.id + '"]');
+      if (!card) return;
+      const selected = item.id === tool.id;
+      card.classList.toggle("active", selected);
+      card.setAttribute("aria-pressed", String(selected));
     });
     closeMobileSidebar();
   }

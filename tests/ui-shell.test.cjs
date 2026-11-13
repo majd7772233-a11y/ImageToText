@@ -35,3 +35,24 @@ test("glass fallback and accessibility motion rules exist", () => {
   assert.match(styles, /:focus-visible/);
   assert.match(styles, /@supports not/);
 });
+
+
+test("the tool library overrides the legacy opaque light section background", () => {
+  assert.match(styles, /\.tool-section\.library-section\s*\{/);
+  assert.match(styles, /background:[\s\S]{0,500}!important;/);
+  assert.match(styles, /backdrop-filter:\s*blur\(27px\)/);
+});
+
+test("tool cards expose glass hover, pressed, selected and readable text states", () => {
+  assert.match(styles, /\.library-section \.tool-card:hover/);
+  assert.match(styles, /\.library-section \.tool-card:active/);
+  assert.match(styles, /\.library-section \.tool-card\[aria-pressed="true"\]/);
+  assert.match(styles, /\.library-section \.tool-card strong\s*\{[\s\S]*?color:\s*#f4f7ff/);
+  assert.match(styles, /\.library-section \.tool-card small\s*\{[\s\S]*?color:\s*#c0cee4/);
+});
+
+test("card pointer lighting is decorative and selection state is synchronized", () => {
+  assert.match(shell, /card\.addEventListener\("pointermove"/);
+  assert.match(shell, /card\.setAttribute\("aria-pressed", "false"\)/);
+  assert.match(shell, /card\.setAttribute\("aria-pressed", String\(selected\)\)/);
+});
