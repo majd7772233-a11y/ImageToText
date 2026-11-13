@@ -141,3 +141,10 @@ test("file preview avoids a duplicate base64 read and releases fallback object U
   assert.doesNotMatch(preview, /readAsDataURL/);
   assert.match(appScript, /fileInput\.addEventListener\('change',[\s\S]*?selectedFile = file/);
 });
+
+
+test("shared result actions clearly identify text-only copy and download behavior", () => {
+  assert.match(html, /id="copyBtn"[^>]*>نسخ النص/);
+  assert.match(html, /id="downloadBtn"[^>]*>تنزيل النص/);
+  assert.match(appScript, /downloadBlob\(blob, 'extracted-text\.txt'\)/);
+});

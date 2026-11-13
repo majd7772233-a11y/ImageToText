@@ -577,8 +577,8 @@
                     <div><p>الخطوة الثالثة</p><h2>النتيجة</h2></div>
                   </div>
                   <div class="controls">
-                    <button class="copy-btn" id="copyBtn" type="button">نسخ</button>
-                    <button class="download-btn" id="downloadBtn" type="button">تنزيل</button>
+                    <button class="copy-btn" id="copyBtn" type="button">نسخ النص</button>
+                    <button class="download-btn" id="downloadBtn" type="button">تنزيل النص</button>
                   </div>
                 </div>
                 <textarea id="outputText" readonly dir="auto" placeholder="ستظهر النتيجة هنا بعد المعالجة..."></textarea>
@@ -1929,7 +1929,7 @@
         placeholder.style.display = 'flex';
         outputText.value = '';
         copyBtn.classList.remove('success');
-        copyBtn.textContent = 'نسخ';
+        copyBtn.textContent = 'نسخ النص';
         updateStatus('تم مسح البيانات. يمكنك تحميل صورة جديدة.', true);
       });
 
@@ -1945,7 +1945,7 @@
           copyBtn.classList.add('success');
           updateStatus('تم نسخ النص إلى الحافظة.', true);
           setTimeout(() => {
-            copyBtn.textContent = 'نسخ';
+            copyBtn.textContent = 'نسخ النص';
             copyBtn.classList.remove('success');
           }, 1200);
         } catch (error) {
