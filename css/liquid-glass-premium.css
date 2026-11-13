@@ -116,3 +116,10 @@ body::after{animation:premium-aurora-b 42s ease-in-out infinite alternate}
 .hero-description,.hero-trust-row,.home-feature small,.library-summary small{color:#d0def4}
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.app-topbar,.hero-glass-card,.hero-float-chip,.home-feature,.tool-screen-heading,.glass-panel{background-color:#14223d}}
+
+/* The native hidden attribute must win over explicit component display rules. */
+.upload-box[hidden],
+.actions[hidden],
+#processBtn[hidden] {
+  display: none !important;
+}
