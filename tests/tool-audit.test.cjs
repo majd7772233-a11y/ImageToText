@@ -131,3 +131,13 @@ test("image readers cap raster dimensions and QR scanning always releases its ca
   assert.match(appScript, /getSafeCanvasDimensions\(image\.naturalWidth, image\.naturalHeight, \{ maxPixels: 8000000/);
   assert.match(appScript, /if \(canvas\) \{ canvas\.width = 1; canvas\.height = 1; \}/);
 });
+
+
+test("file preview avoids a duplicate base64 read and releases fallback object URLs", () => {
+  assert.match(appScript, /let fallbackPreviewObjectUrl = null/);
+  assert.match(appScript, /fallbackPreviewObjectUrl = URL\.createObjectURL\(file\)/);
+  assert.match(appScript, /URL\.revokeObjectURL\(fallbackPreviewObjectUrl\)/);
+  const preview = appScript.split("function setPreviewFromFile(file, notify = true) {")[1].split("function downloadBlob(blob, filename) {")[0];
+  assert.doesNotMatch(preview, /readAsDataURL/);
+  assert.match(appScript, /fileInput\.addEventListener\('change',[\s\S]*?selectedFile = file/);
+});

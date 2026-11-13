@@ -664,6 +664,7 @@
       const toolGrid = document.getElementById('toolGrid');
       let selectedFile = null;
       let activeToolId = null;
+      let fallbackPreviewObjectUrl = null;
 
       function updateStatus(message, isGood = false) {
         statusEl.textContent = String(message == null ? '' : message);
@@ -729,20 +730,16 @@
       function setPreviewFromFile(file, notify = true) {
         if (!file) return;
         selectedFile = file;
+        if (fallbackPreviewObjectUrl) {
+          URL.revokeObjectURL(fallbackPreviewObjectUrl);
+          fallbackPreviewObjectUrl = null;
+        }
         if (file.type && file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            previewImage.src = event.target.result;
-            previewImage.style.display = 'block';
-            placeholder.style.display = 'none';
-            if (notify) updateStatus('تم اختيار الصورة بنجاح.', true);
-          };
-          reader.onerror = () => {
-            previewImage.removeAttribute('src');
-            previewImage.style.display = 'none';
-            if (notify) updateStatus('تعذرت معاينة الصورة، لكن يمكن متابعة معالجتها.', false);
-          };
-          reader.readAsDataURL(file);
+          fallbackPreviewObjectUrl = URL.createObjectURL(file);
+          previewImage.src = fallbackPreviewObjectUrl;
+          previewImage.style.display = 'block';
+          placeholder.style.display = 'none';
+          if (notify) updateStatus('تم اختيار الصورة بنجاح.', true);
           return;
         }
         previewImage.removeAttribute('src');
@@ -758,7 +755,6 @@
         placeholder.style.display = 'flex';
         if (notify) updateStatus('تم اختيار الملف: ' + (file.name || 'ملف'), true);
       }
-
       function downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -1846,7 +1842,13 @@
       pickFileBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (event) => {
         const file = event.target.files && event.target.files[0];
-        if (file) setPreviewFromFile(file, false);
+        if (!file) return;
+        if (fallbackPreviewObjectUrl) {
+          URL.revokeObjectURL(fallbackPreviewObjectUrl);
+          fallbackPreviewObjectUrl = null;
+        }
+        selectedFile = file;
+        updateStatus('تم اختيار الملف: ' + (file.name || 'ملف'), true);
       });
 
       ['dragenter', 'dragover'].forEach((eventName) => {
@@ -1909,6 +1911,10 @@
 
       clearBtn.addEventListener('click', () => {
         selectedFile = null;
+        if (fallbackPreviewObjectUrl) {
+          URL.revokeObjectURL(fallbackPreviewObjectUrl);
+          fallbackPreviewObjectUrl = null;
+        }
         fileInput.value = '';
         previewImage.removeAttribute('src');
         previewImage.style.display = 'none';
