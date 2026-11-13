@@ -148,3 +148,12 @@ test("shared result actions clearly identify text-only copy and download behavio
   assert.match(html, /id="downloadBtn"[^>]*>تنزيل النص/);
   assert.match(appScript, /downloadBlob\(blob, 'extracted-text\.txt'\)/);
 });
+
+
+test("PDF raster OCR and PDF-to-JPG exports cap large canvases and release page buffers", () => {
+  assert.match(appScript, /const baseViewport = page\.getViewport\(\{ scale: 1\.65 \}\)/);
+  assert.match(appScript, /const baseViewport = page\.getViewport\(\{ scale: 1\.6 \}\)/);
+  assert.match(appScript, /getSafeCanvasDimensions\([\s\S]*?Math\.ceil\(baseViewport\.width\)/);
+  assert.match(appScript, /finally \{\s*canvas\.width = 1;\s*canvas\.height = 1;/);
+  assert.match(appScript, /تعذر إنشاء مساحة OCR آمنة لصفحة PDF/);
+});

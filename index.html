@@ -963,16 +963,25 @@
           let rows = ImageToTextUtils.groupPdfTextItems(content.items);
           if (!rows.length && allowOcr) {
             updateStatus('الصفحة ' + pageNumber + ' صورة ممسوحة؛ يجري التعرف عليها...', false);
-            const viewport = page.getViewport({ scale: 1.65 });
+            const baseViewport = page.getViewport({ scale: 1.65 });
+            const canvasBudget = ImageToTextUtils.getSafeCanvasDimensions(
+              Math.ceil(baseViewport.width), Math.ceil(baseViewport.height)
+            );
+            const renderScale = 1.65 * (canvasBudget.wasScaled ? canvasBudget.scale * 0.999 : 1);
+            const viewport = page.getViewport({ scale: renderScale });
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { willReadFrequently: true });
-            canvas.width = Math.ceil(viewport.width);
-            canvas.height = Math.ceil(viewport.height);
-            await page.render({ canvasContext: context, viewport }).promise;
-            const scannedText = await imageToText(canvas);
-            rows = scannedText.split(/\r?\n/).map((line) => [line.trim()]).filter((row) => row[0]);
-            canvas.width = 1;
-            canvas.height = 1;
+            try {
+              const context = canvas.getContext('2d', { willReadFrequently: true });
+              if (!context) throw new Error('تعذر إنشاء مساحة OCR آمنة لصفحة PDF.');
+              canvas.width = Math.ceil(viewport.width);
+              canvas.height = Math.ceil(viewport.height);
+              await page.render({ canvasContext: context, viewport }).promise;
+              const scannedText = await imageToText(canvas);
+              rows = scannedText.split(/\r?\n/).map((line) => [line.trim()]).filter((row) => row[0]);
+            } finally {
+              canvas.width = 1;
+              canvas.height = 1;
+            }
           }
           pages.push({
             pageNumber,
@@ -1126,18 +1135,27 @@
               for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
                 updateStatus('يجري تحويل الصفحة ' + pageNumber + ' من ' + pdf.numPages + '...', false);
                 const page = await pdf.getPage(pageNumber);
-                const viewport = page.getViewport({ scale: 1.6 });
+                const baseViewport = page.getViewport({ scale: 1.6 });
+                const canvasBudget = ImageToTextUtils.getSafeCanvasDimensions(
+                  Math.ceil(baseViewport.width), Math.ceil(baseViewport.height)
+                );
+                const renderScale = 1.6 * (canvasBudget.wasScaled ? canvasBudget.scale * 0.999 : 1);
+                const viewport = page.getViewport({ scale: renderScale });
                 const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.width = Math.ceil(viewport.width);
-                canvas.height = Math.ceil(viewport.height);
-                await page.render({ canvasContext: context, viewport }).promise;
-                const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-                if (!blob) throw new Error('تعذر إنشاء صورة للصفحة ' + pageNumber + '.');
-                const pageName = 'page-' + String(pageNumber).padStart(3, '0') + '.jpg';
-                archive.file(pageName, blob);
-                canvas.width = 1;
-                canvas.height = 1;
+                try {
+                  const context = canvas.getContext('2d');
+                  if (!context) throw new Error('تعذر إنشاء صورة آمنة للصفحة ' + pageNumber + '.');
+                  canvas.width = Math.ceil(viewport.width);
+                  canvas.height = Math.ceil(viewport.height);
+                  await page.render({ canvasContext: context, viewport }).promise;
+                  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+                  if (!blob) throw new Error('تعذر إنشاء صورة للصفحة ' + pageNumber + '.');
+                  const pageName = 'page-' + String(pageNumber).padStart(3, '0') + '.jpg';
+                  archive.file(pageName, blob);
+                } finally {
+                  canvas.width = 1;
+                  canvas.height = 1;
+                }
               }
               const zipBlob = await archive.generateAsync({
                 type: 'blob',
