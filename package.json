@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node scripts/serve.cjs",
     "test": "node --test",
-    "check": "node --check script/app-shell.js && node --check script/liquid-hero.js && node --check scripts/serve.cjs"
+    "check": "node --check script/app-shell.js && node --check script/liquid-hero.js && node --check script/format-utils.js && node --check scripts/serve.cjs && node --check tests/ui-shell.test.cjs && node --check tests/tool-audit.test.cjs && node --check tests/serve.test.cjs"
   },
   "keywords": [
     "image-to-text",
@@ -32,5 +32,8 @@
     "qrcode-generator": "^2.0.4",
     "tesseract.js": "^7.0.0",
     "xlsx": "^0.18.5"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
