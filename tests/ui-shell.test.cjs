@@ -67,7 +67,7 @@ test("the premium hero has a shape-aware WebGL2 lens and a CSS fallback", () => 
   assert.match(heroRenderer, /getContext\("webgl2"/);
   assert.match(heroRenderer, /smoothMin/);
   assert.match(heroRenderer, /backdrop\(clamp\(uv\+off/);
-  assert.match(heroRenderer, /data-renderer="fallback"/);
+  assert.match(heroRenderer, /dataset\.renderer="fallback"/);
   assert.match(heroRenderer, /1000\/30/);
 });
 
