@@ -381,7 +381,6 @@
     <link rel="stylesheet" href="./css/style.css" />
     <link rel="stylesheet" href="./css/home.css" />
     <link rel="stylesheet" href="./css/history.css" />
-    <link rel="stylesheet" href="./cropperjs/cropper.min.css" />
     <link rel="stylesheet" href="./css/liquid-glass.css" />
     <link rel="stylesheet" href="./css/liquid-glass-premium.css" />
   </head>
@@ -601,36 +600,13 @@
       </div>
     </div>
 
-    <script src="./script/library/jquery.min.js"></script>
-    <script>
-      window.BASE_URL = './';
-      window.FILE_VERSION = '';
-      window.CURRENT_LANG = 'ar';
-      window.TOOL_ID = 1;
-      window.TOOL_CURRENT_LANG = 'ar';
-      window.IS_PREMIUM = 0;
-      window.IS_TOOL_PREMIUM = 0;
-      window.USER_ID = 0;
 
-      var tooManyRequestHead = 'طلبات كثيرة';
-      var tooManyRequestDesc = 'تم تجاوز الحد المسموح.';
-      var popupCloseBtn = 'إغلاق';
-      var enterImageUrl = 'أدخل رابط الصورة';
-      var notTextFoundHeadingLabel = 'لم يتم العثور على نص';
-      var notTextFoundDetailLabel = 'حاول صورة أو ملفا آخر.';
-      var copyTooltipLabel = 'نسخ';
-      var copiedTooltipLabel = 'تم النسخ';
-      var downloadTooltipLabel = 'تنزيل';
-      var downloadedTooltipLabel = 'تم التنزيل';
-    </script>
-    <script src="./script/general.js"></script>
-    <script src="./script/home.js"></script>
-    <script src="./script/trustpilot.js"></script>
-    <script src="./cropperjs/cropper.min.js"></script>
-    <script src="./script/cropper.js"></script>
-    <script src="./node_modules/tesseract.js/dist/tesseract.min.js"></script>
+   <script src="./node_modules/tesseract.js/dist/tesseract.min.js"></script>
     <script src="./node_modules/jspdf/dist/jspdf.umd.min.js"></script>
     <script src="./node_modules/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="./node_modules/jszip/dist/jszip.min.js"></script>
+    <script src="./node_modules/qrcode/build/qrcode.js"></script>
+    <script src="./script/format-utils.js"></script>
     <script src="./node_modules/mammoth/mammoth.browser.min.js"></script>
     <script src="./node_modules/jsqr/dist/jsQR.js"></script>
     <script src="./node_modules/pdf-lib/dist/pdf-lib.min.js"></script>
