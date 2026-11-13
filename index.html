@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="أداة تحويل الصور إلى نص باللغة العربية تعمل محليا بالكامل بدون روابط خارجية أو إعلانات." />
-    <title>محول الصورة إلى نص</title>
+    <title>ImageToText — مساحة العمل</title>
     <style>
       :root {
         --bg: #f4f7fb;
@@ -382,60 +382,212 @@
     <link rel="stylesheet" href="./css/home.css" />
     <link rel="stylesheet" href="./css/history.css" />
     <link rel="stylesheet" href="./cropperjs/cropper.min.css" />
+    <link rel="stylesheet" href="./css/liquid-glass.css" />
+    <link rel="stylesheet" href="./css/liquid-glass-premium.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand">
-          <div class="brand-mark">AI</div>
-          <div>
-            <h1>محول الصورة إلى نص</h1>
-            <small>نسخة محلية عربية بالكامل</small>
+    <div class="app-shell app-shell--liquid">
+      <aside class="app-sidebar" id="appSidebar" aria-label="القائمة الرئيسية">
+        <div class="sidebar-brand">
+          <div class="brand-mark" aria-hidden="true">✦</div>
+          <div class="brand-copy">
+            <strong>ImageToText</strong>
+            <small>SMART FILE WORKSPACE</small>
           </div>
         </div>
-      </header>
 
-      <main class="workspace">
-        <section class="panel">
-          <div id="dropZone" class="upload-box" aria-label="إدخال صورة">
-            <input id="fileInput" type="file" accept="image/*" hidden />
-            <div class="upload-icon">📷</div>
-            <p>اسحب الصورة هنا أو اضغط للاختيار</p>
-            <button type="button" id="pickFile">اختر ملف</button>
-            <small>PNG • JPG • JPEG • GIF • BMP • TIFF • WEBP</small>
-          </div>
+        <label class="sidebar-search" for="toolSearch">
+          <span class="search-symbol" aria-hidden="true">⌕</span>
+          <input id="toolSearch" type="search" placeholder="ابحث عن أداة..." autocomplete="off" />
+          <kbd>⌘ K</kbd>
+        </label>
 
-          <div class="actions">
-            <button class="action-btn primary" id="processBtn" type="button">بدء التعرف</button>
-            <button class="action-btn secondary" id="clearBtn" type="button">مسح</button>
-          </div>
+        <nav class="sidebar-primary-nav" aria-label="التنقل">
+          <button type="button" id="homeNavButton" class="sidebar-nav-item is-active">
+            <span class="nav-symbol" aria-hidden="true">⌂</span>
+            <span>الرئيسية</span>
+          </button>
+          <div class="sidebar-label">تصفية الأدوات</div>
+          <button type="button" class="sidebar-nav-item category-filter is-active" data-category-filter="all">
+            <span class="nav-symbol" aria-hidden="true">▦</span>
+            <span>كل الأدوات</span>
+          </button>
+          <button type="button" class="sidebar-nav-item category-filter" data-category-filter="images">
+            <span class="nav-symbol" aria-hidden="true">▧</span>
+            <span>الصور وOCR</span>
+          </button>
+          <button type="button" class="sidebar-nav-item category-filter" data-category-filter="pdf">
+            <span class="nav-symbol" aria-hidden="true">▤</span>
+            <span>ملفات PDF</span>
+          </button>
+          <button type="button" class="sidebar-nav-item category-filter" data-category-filter="office">
+            <span class="nav-symbol" aria-hidden="true">▣</span>
+            <span>المستندات والجداول</span>
+          </button>
+          <button type="button" class="sidebar-nav-item category-filter" data-category-filter="codes">
+            <span class="nav-symbol" aria-hidden="true">▦</span>
+            <span>QR والباركود</span>
+          </button>
+        </nav>
 
-          <div id="status">جاهز لتحويل الصورة إلى نص.</div>
-        </section>
+        <div class="sidebar-tools-heading">
+          <span>الأدوات</span>
+          <span id="toolCount" class="tool-count">29</span>
+        </div>
+        <nav id="toolNavList" class="sidebar-tools" aria-label="قائمة الأدوات"></nav>
 
-        <section class="panel">
-          <div class="preview-box">
-            <img id="previewImage" alt="معاينة الصورة" />
-            <div id="placeholder" class="placeholder">معاينة الصورة ستظهر هنا</div>
-          </div>
-        </section>
+        <div class="sidebar-footer">
+          <span class="footer-orb" aria-hidden="true"></span>
+          <span>أربع فئات · مساحة واحدة</span>
+        </div>
+      </aside>
 
-        <section class="panel">
-          <div class="output-toolbar">
-            <h2>النص المستخرج</h2>
-            <div class="controls">
-              <button class="copy-btn" id="copyBtn" type="button">نسخ</button>
-              <button class="download-btn" id="downloadBtn" type="button">تنزيل</button>
+      <button type="button" id="sidebarBackdrop" class="sidebar-backdrop" hidden aria-label="إغلاق القائمة الجانبية"></button>
+
+      <div class="app-main">
+        <header class="topbar app-topbar">
+          <div class="topbar-left">
+            <button type="button" id="sidebarToggle" class="icon-button sidebar-toggle" aria-label="فتح القائمة" aria-expanded="false">☰</button>
+            <div class="breadcrumbs" aria-label="مسار الصفحة">
+              <span>مساحة العمل</span>
+              <span class="breadcrumb-separator" aria-hidden="true">/</span>
+              <strong id="breadcrumbCurrent">الرئيسية</strong>
             </div>
           </div>
-          <textarea id="outputText" readonly placeholder="سيظهر النص هنا بعد معالجة الصورة..."></textarea>
-        </section>
-      </main>
+          <div class="topbar-right">
+            <span class="workspace-pill"><span class="workspace-dot"></span><span>مساحة عمل موحّدة</span><i aria-hidden="true"></i><strong>29 أداة</strong></span>
+          </div>
+        </header>
 
-      <section class="tool-section" aria-label="قائمة الأدوات">
-        <h2>أدوات المشروع</h2>
-        <div id="toolGrid" class="tool-grid"></div>
-      </section>
+        <main class="main-content">
+          <section id="homeScreen" class="home-screen" aria-labelledby="homeTitle">
+            <section class="home-hero glass-surface">
+              <div class="hero-copy">
+                <p class="hero-eyebrow"><span class="eyebrow-dot"></span><span class="hero-eyebrow-label">SMART WORKSPACE</span><i aria-hidden="true"></i> كل أدواتك في مكان واحد</p>
+                <h1 id="homeTitle">من ملفاتك إلى نتائج جاهزة <span>بسهولة تليق بعملك.</span></h1>
+                <p class="hero-description">حوّل الصور والمستندات، استخرج النصوص، وأنجز مهامك اليومية من مساحة عمل واحدة صُممت لتكون واضحة وسريعة ومريحة.</p>
+                <div class="hero-actions">
+                  <button type="button" id="startOcrBtn" class="primary-cta"><span aria-hidden="true">✧</span>ابدأ باستخراج النص</button>
+                  <button type="button" id="exploreToolsBtn" class="secondary-cta"><span>استكشف الأدوات</span><span aria-hidden="true">↙</span></button>
+                  <span class="hero-stat"><strong>29</strong><span>أداة بين يديك</span></span>
+                </div>
+                <div class="hero-trust-row" aria-label="مميزات مساحة العمل">
+                  <span><i aria-hidden="true">✓</i> تصنيفات واضحة</span>
+                  <span><i aria-hidden="true">✓</i> سير عمل منظم</span>
+                  <span><i aria-hidden="true">✓</i> واجهة عربية</span>
+                </div>
+              </div>
+              <div class="hero-art" id="heroVisual" data-renderer="pending" aria-hidden="true">
+                <canvas id="heroGlassCanvas" class="hero-glass-canvas"></canvas>
+                <div class="hero-art-grid"></div>
+                <div class="hero-orbit orbit-one"></div>
+                <div class="hero-orbit orbit-two"></div>
+                <div class="hero-glass-card hero-glass-card-back">
+                  <span class="hero-file-badge">PDF</span><strong>مستنداتك</strong><i></i>
+                </div>
+                <div class="hero-glass-card hero-glass-card-front">
+                  <div class="hero-card-top"><span class="hero-card-icon">✦</span><span class="hero-card-state">SMART WORKSPACE</span></div>
+                  <strong>ImageToText</strong><small>حوّل · استخرج · أنجز</small>
+                  <div class="hero-card-lines"><i></i><i></i><i></i></div>
+                  <div class="hero-card-bottom"><span>WORKSPACE</span><span class="hero-card-ready"><i></i> READY</span></div>
+                </div>
+                <div class="hero-float-chip hero-float-chip-ocr"><strong>OCR</strong><span>نصوص الصور</span></div>
+                <div class="hero-float-chip hero-float-chip-doc"><strong>DOCS</strong><span>تحويل الملفات</span></div>
+                <div class="hero-glint"></div>
+                <span class="hero-material-tag"><i></i> LIQUID GLASS</span>
+              </div>
+            </section>
+
+            <section class="home-feature-strip" aria-label="نظرة سريعة على مساحة العمل">
+              <div class="home-feature"><span class="home-feature-icon" aria-hidden="true">▦</span><div><strong>29 أداة</strong><small>لمختلف مهام الصور والملفات</small></div><span class="home-feature-index">01</span></div>
+              <div class="home-feature"><span class="home-feature-icon home-feature-icon-violet" aria-hidden="true">◇</span><div><strong>4 فئات منظمة</strong><small>اعثر على ما تحتاجه بسرعة</small></div><span class="home-feature-index">02</span></div>
+              <div class="home-feature"><span class="home-feature-icon home-feature-icon-mint" aria-hidden="true">↗</span><div><strong>3 خطوات واضحة</strong><small>إضافة الملف ثم المعاينة والنتيجة</small></div><span class="home-feature-index">03</span></div>
+            </section>
+
+            <section id="librarySection" class="tool-section library-section" aria-label="مكتبة الأدوات">
+              <div class="section-heading">
+                <div><p class="section-kicker">THE TOOL LIBRARY</p><h2>كل ما تحتاجه، منظّم أمامك.</h2></div>
+                <div class="library-heading-side">
+                  <p class="section-description">اختر الأداة المناسبة، وانتقل مباشرة إلى مساحة عملها.</p>
+                  <div class="library-summary" aria-live="polite"><strong id="visibleToolCount">29</strong><span>أداة معروضة</span><i aria-hidden="true"></i><small>من أصل 29</small></div>
+                </div>
+              </div>
+
+              <div id="categoryChips" class="category-chips" aria-label="تصفية الأدوات">
+                <button type="button" class="category-chip is-active" data-category-filter="all" aria-pressed="true"><span>الكل</span><small data-category-count="all">29</small></button>
+                <button type="button" class="category-chip" data-category-filter="images" aria-pressed="false"><span>الصور وOCR</span><small data-category-count="images">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="pdf" aria-pressed="false"><span>PDF</span><small data-category-count="pdf">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="office" aria-pressed="false"><span>Office</span><small data-category-count="office">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="codes" aria-pressed="false"><span>QR والباركود</span><small data-category-count="codes">—</small></button>
+              </div>
+
+              <div id="toolGrid" class="tool-grid"></div>
+              <p id="emptySearchState" class="empty-search-state" hidden>لم نعثر على أداة تطابق بحثك.</p>
+            </section>
+          </section>
+
+          <section id="toolScreen" class="tool-screen" hidden aria-labelledby="activeToolName">
+            <div class="tool-screen-heading">
+              <button type="button" id="backToHome" class="back-button"><span aria-hidden="true">→</span>العودة إلى الأدوات</button>
+              <div class="active-tool-heading">
+                <div id="activeToolIcon" class="active-tool-icon" aria-hidden="true">✦</div>
+                <div class="active-tool-copy">
+                  <p class="tool-overline">مساحة العمل <span>/</span> <span id="activeToolCategory">الأدوات</span></p>
+                  <h1 id="activeToolName">الأداة</h1>
+                  <p id="activeToolDesc">وصف الأداة سيظهر هنا.</p>
+                </div>
+              </div>
+              <span class="tool-state-pill"><span class="workspace-dot"></span>جاهز للاستخدام</span>
+            </div>
+
+            <div class="workspace tool-workspace">
+              <section class="panel glass-panel input-panel" aria-label="إدخال الملفات">
+                <div class="panel-heading">
+                  <span class="panel-step">01</span>
+                  <div><p>الخطوة الأولى</p><h2>إضافة الملفات</h2></div>
+                </div>
+                <div id="dropZone" class="upload-box">
+                  <input id="fileInput" type="file" accept="image/*" hidden />
+                  <div class="upload-icon" aria-hidden="true">⇧</div>
+                  <p>ابدأ باختيار الملف</p>
+                  <button type="button" id="pickFile">اختيار ملف</button>
+                  <small>اختر ملفًا من جهازك لبدء المعالجة.</small>
+                </div>
+                <div class="actions">
+                  <button class="action-btn primary" id="processBtn" type="button">بدء التعرف</button>
+                  <button class="action-btn secondary" id="clearBtn" type="button">مسح</button>
+                </div>
+                <div id="status" role="status" aria-live="polite">جاهز لاستقبال ملفك.</div>
+              </section>
+
+              <section class="panel glass-panel preview-panel" aria-label="معاينة الملف">
+                <div class="panel-heading">
+                  <span class="panel-step">02</span>
+                  <div><p>الخطوة الثانية</p><h2>المعاينة</h2></div>
+                </div>
+                <div class="preview-box">
+                  <img id="previewImage" alt="معاينة الملف المحدد" />
+                  <div id="placeholder" class="placeholder"><span class="placeholder-symbol" aria-hidden="true">▧</span><span>ستظهر معاينة الملف هنا</span></div>
+                </div>
+              </section>
+
+              <section class="panel glass-panel output-panel" aria-label="نتيجة المعالجة">
+                <div class="output-toolbar">
+                  <div class="panel-heading output-heading">
+                    <span class="panel-step">03</span>
+                    <div><p>الخطوة الثالثة</p><h2>النتيجة</h2></div>
+                  </div>
+                  <div class="controls">
+                    <button class="copy-btn" id="copyBtn" type="button">نسخ</button>
+                    <button class="download-btn" id="downloadBtn" type="button">تنزيل</button>
+                  </div>
+                </div>
+                <textarea id="outputText" readonly dir="auto" placeholder="ستظهر النتيجة هنا بعد المعالجة..."></textarea>
+              </section>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
 
     <div id="toolPromptModal" class="tool-prompt-backdrop hidden" aria-hidden="true">
@@ -592,6 +744,7 @@
             toolGrid.querySelectorAll('.tool-card').forEach((card) => card.classList.remove('active'));
             button.classList.add('active');
             activeToolId = selectedTool.id;
+            if (typeof window.openToolScreen === 'function') window.openToolScreen(selectedTool.id);
             await launchTool(selectedTool.id);
           });
         });
@@ -1498,6 +1651,8 @@
         updateStatus('تم تنزيل الملف النصي.', true);
       });
     </script>
+    <script src="./script/app-shell.js"></script>
+    <script src="./script/liquid-hero.js"></script>
   </body>
 </html>
 

@@ -4,7 +4,7 @@ A local-first Arabic/English image, OCR, and document utility workspace. The pro
 
 ## Current state
 
-This is an initial source import, not a finished release. The existing UI and tool handlers are still under review. Legacy service integrations have not yet all been removed, and some conversion tools are placeholders or incomplete. Do not treat every visible tool as production-ready.
+The first interface redesign pass adds a searchable multi-screen workspace, dedicated tool pages, responsive navigation, and a dark Liquid Glass visual system. The existing conversion handlers remain in place and are still being audited. Legacy service integrations have not yet all been removed, and some conversion tools are placeholders or incomplete. Do not treat every visible tool as production-ready.
 
 ## Local development
 
@@ -23,7 +23,7 @@ Open `http://localhost:8000` in a browser. The app is static HTML/CSS/JavaScript
 
 ## Dependencies
 
-The pinned npm dependency graph includes PDF, DOCX, spreadsheet, QR/barcode, OCR, and ZIP libraries. `node_modules/` is intentionally excluded from Git; install from `package-lock.json`.
+The pinned npm dependency graph includes PDF, DOCX, spreadsheet, QR/barcode, OCR, and ZIP libraries. `node_modules/` is intentionally excluded from Git; install from `package-lock.json`. Run `npm test` for the built-in Node test suite.
 
 ## Direction
 
@@ -32,6 +32,10 @@ The pinned npm dependency graph includes PDF, DOCX, spreadsheet, QR/barcode, OCR
 - Make all processing local and offline-capable where the format and bundled runtime permit it.
 - Replace placeholder handlers with real conversions and automated tests.
 
+## Liquid Glass rendering level
+
+The main browser interface uses CSS backdrop transmission/blur, layered tint, contour highlights, and depth cues (L1). The home hero also contains a self-contained WebGL2 lens scene: the app owns that scene and visibly displaces its own rendered backdrop inside a curved mask (localized L2 visual). It does not sample or refract arbitrary DOM/page content, and it does not implement L3 merging/morphing. When WebGL2 is unavailable, the hero uses a CSS visual fallback. Semantic text and controls remain crisp; reduced-motion, reduced-transparency, and responsive fallbacks are included.
+
 ## Privacy
 
-Do not upload user documents to external services. Keep file processing in the browser and local device unless a future feature is explicitly designed otherwise.
+The target architecture is local-first. This UI pass does not complete the removal of legacy network integrations from the earlier application; that remains a separate required audit before claiming fully offline operation. Do not treat the current build as guaranteed offline.
