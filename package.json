@@ -4,8 +4,9 @@
   "description": "Self-contained Arabic image-to-text app without external links or ads.",
   "main": "index.html",
   "scripts": {
-    "start": "python -m http.server 8000",
-    "test": "node --test"
+    "start": "node scripts/serve.cjs",
+    "test": "node --test",
+    "check": "node --check script/app-shell.js && node --check script/liquid-hero.js && node --check scripts/serve.cjs"
   },
   "keywords": [
     "image-to-text",
