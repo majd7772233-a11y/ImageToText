@@ -772,34 +772,32 @@
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const maxWidth = pageWidth - margin * 2;
-        const lines = pdf.splitTextToSize(String(text || ''), maxWidth);
+        const content = String(text || '');
+        const lines = pdf.splitTextToSize(content, maxWidth);
+        const rtl = /[\u0590-\u08FF]/.test(content);
+        const lineHeight = 6.2;
+        let y = margin + 18;
 
         pdf.setFontSize(11);
         pdf.text(title, margin, margin);
-        pdf.setFontSize(12);
-        let y = margin + 16;
-        const chunks = [];
-        let current = '';
-        lines.forEach((line) => {
-          if (y > pageHeight - margin) {
-            chunks.push(current.trim());
-            current = '';
-            pdf.addPage();
-            y = margin;
-          }
-          current += `${line}\n`;
-          y += 7;
-        });
-        if (current.trim()) {
-          chunks.push(current.trim());
-        }
+        pdf.setFontSize(11);
+        if (rtl && typeof pdf.setR2L === 'function') pdf.setR2L(true);
 
-        const pageText = chunks.join('\n');
-        pdf.text(pageText, margin, margin + 16);
+        for (const line of lines) {
+          if (y > pageHeight - margin) {
+            pdf.addPage();
+            y = margin + 5;
+          }
+          pdf.text(line, rtl ? pageWidth - margin : margin, y, {
+            align: rtl ? 'right' : 'left',
+            maxWidth
+          });
+          y += lineHeight;
+        }
         return pdf.output('blob');
       }
 
-      async function readImageData(file) {
+      async function readImageData(file) {      async function readImageData(file) {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (event) => {
@@ -820,47 +818,109 @@
         });
       }
 
-      async function extractPdfText(file) {
-        const data = await file.arrayBuffer();
-        const pdf = await window.pdfjsLib.getDocument({ data }).promise;
-        const textPages = [];
-        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-          const page = await pdf.getPage(pageNumber);
-          const content = await page.getTextContent();
-          const pageText = content.items.map((item) => item.str).join(' ');
-          textPages.push(pageText.trim());
+      let ocrWorkerPromise = null;
+
+      async function getOcrWorker() {
+        if (!window.Tesseract || typeof Tesseract.createWorker !== 'function') {
+          throw new Error('محرك OCR المحلي غير متاح.');
         }
-        return textPages.filter(Boolean).join('\n\n');
+        if (!ocrWorkerPromise) {
+          ocrWorkerPromise = Tesseract.createWorker('ara+eng', 1, {
+            workerPath: './vendor/tesseract/worker.min.js',
+            corePath: './vendor/tesseract-core',
+            langPath: './tessdata',
+            gzip: true,
+            logger: (progress) => {
+              if (progress && progress.status === 'recognizing text') {
+                updateStatus('جاري التعرف: ' + Math.round(progress.progress * 100) + '%', false);
+              }
+            }
+          }).catch((error) => {
+            ocrWorkerPromise = null;
+            throw error;
+          });
+        }
+        return ocrWorkerPromise;
       }
 
       async function imageToText(file) {
-        if (!window.Tesseract) {
-          throw new Error('Tesseract unavailable');
-        }
-        const result = await Tesseract.recognize(file, 'ara+eng', {
-          logger: (progress) => {
-            if (progress && progress.status === 'recognizing text') {
-              updateStatus(`جاري التعرف: ${Math.round(progress.progress * 100)}%`, false);
-            }
-          }
-        });
+        const worker = await getOcrWorker();
+        const result = await worker.recognize(file);
         return (result?.data?.text || '').trim();
       }
 
+      async function extractPdfPages(file, allowOcr = true) {
+        if (!window.pdfjsLib) throw new Error('مكتبة PDF المحلية غير متاحة.');
+        const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const pages = [];
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          const page = await pdf.getPage(pageNumber);
+          const content = await page.getTextContent();
+          let rows = ImageToTextUtils.groupPdfTextItems(content.items);
+          if (!rows.length && allowOcr) {
+            updateStatus('الصفحة ' + pageNumber + ' صورة ممسوحة؛ يجري التعرف عليها...', false);
+            const viewport = page.getViewport({ scale: 1.65 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
+            await page.render({ canvasContext: context, viewport }).promise;
+            const scannedText = await imageToText(canvas);
+            rows = scannedText.split(/\r?\n/).map((line) => [line.trim()]).filter((row) => row[0]);
+            canvas.width = 1;
+            canvas.height = 1;
+          }
+          pages.push({
+            pageNumber,
+            rows,
+            text: rows.map((row) => row.join('    ')).join('\n')
+          });
+        }
+        return pages;
+      }
+
+      async function extractPdfText(file) {
+        const pages = await extractPdfPages(file, true);
+        return pages.map((page) => page.text).filter(Boolean).join('\n\n');
+      }
+
       async function readDocxText(file) {
-        if (!window.mammoth) return '';
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        return (result?.value || '').trim();
+        if (!window.mammoth || typeof mammoth.extractRawText !== 'function') {
+          throw new Error('مكتبة DOCX المحلية غير متاحة.');
+        }
+        if (!/\.docx$/i.test(file.name)) {
+          throw new Error('يدعم هذا التحويل ملفات DOCX فقط؛ ملفات DOC القديمة غير مدعومة.');
+        }
+        const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        const text = (result?.value || '').trim();
+        if (!text) throw new Error('لم يتم العثور على نص قابل للاستخراج داخل ملف DOCX.');
+        return text;
+      }
+
+      async function launchTool(      function safeFileHandler(handler) {
+        return async function(event) {
+          try {
+            await handler(event);
+          } catch (error) {
+            console.error('ImageToText tool failed:', error);
+            updateStatus('تعذرت معالجة الملف. تحقق من نوعه وسلامته ثم أعد المحاولة.', false);
+          } finally {
+            fileInput.multiple = false;
+            fileInput.value = '';
+          }
+        };
       }
 
       async function launchTool(toolId) {
         if (!toolId) return;
+        fileInput.onchange = null;
+        fileInput.multiple = false;
+        fileInput.accept = '';
 
         switch (toolId) {
           case 'image-to-text': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               selectedFile = file;
@@ -869,7 +929,7 @@
               outputText.value = text || 'لم يتم العثور على نص في هذه الصورة.';
               updateStatus(text ? 'تم استخراج النص بنجاح.' : 'تمت معالجة الصورة بدون نص واضح.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -908,7 +968,7 @@
 
           case 'pdf-to-text': {
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               updateStatus('جاري استخراج نص PDF...', false);
@@ -916,14 +976,14 @@
               outputText.value = text || 'لم يتم العثور على نص في ملف PDF هذا.';
               updateStatus(text ? 'تم استخراج النص من الملف بنجاح.' : 'لم يتم العثور على نص في PDF المتاح.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'pdf-to-word': {
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await extractPdfText(file);
@@ -943,14 +1003,14 @@
               outputText.value = text;
               updateStatus('تم إنشاء ملف Word من PDF.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'pdf-to-jpg': {
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
@@ -966,14 +1026,14 @@
               outputText.value = 'تم تحويل أول صفحة من PDF إلى JPG.';
               updateStatus('تم تحويل أول صفحة PDF إلى صورة JPG.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'jpg-to-pdf': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const data = await readImageData(file);
@@ -986,14 +1046,14 @@
               outputText.value = `تم تحويل الصورة: ${file.name} إلى ملف PDF.`;
               updateStatus('تم تحويل الصورة إلى PDF بنجاح.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'jpg-to-word': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await imageToText(file);
@@ -1006,14 +1066,14 @@
               outputText.value = text || 'لا يوجد نص واضح في الصورة.';
               updateStatus('تم إنشاء مستند Word من الصورة.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'qr-code-scanner': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const img = new Image();
@@ -1030,7 +1090,7 @@
               outputText.value = result;
               updateStatus(result.includes('لم يتم العثور') ? 'لم يتم العثور على رمز QR.' : 'تم قراءة كود QR بنجاح.', result.includes('لم يتم العثور') ? false : true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -1059,7 +1119,7 @@
 
           case 'invert-image': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const { canvas, ctx } = await readImageData(file);
@@ -1076,7 +1136,7 @@
               outputText.value = 'تم عكس ألوان الصورة بنجاح.';
               updateStatus('تم عكس ألوان الصورة.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -1107,7 +1167,7 @@
 
           case 'word-to-pdf': {
             fileInput.accept = '.doc,.docx';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               let text = '';
@@ -1121,7 +1181,7 @@
               outputText.value = text;
               updateStatus('تم تحويل الملف Word إلى PDF.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -1129,7 +1189,7 @@
           case 'merge-pdf': {
             fileInput.multiple = true;
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const files = Array.from(event.target.files || []);
               if (files.length < 2) {
                 updateStatus('يرجى اختيار ملفين PDF على الأقل للدمج.', false);
@@ -1148,14 +1208,14 @@
               updateStatus('تم دمج ملفات PDF بنجاح.', true);
               fileInput.multiple = false;
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'jpg-to-excel': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await imageToText(file);
@@ -1170,7 +1230,7 @@
               outputText.value = text || 'لا يوجد نص واضح في الصورة.';
               updateStatus('تم إنشاء ملف Excel من الصورة.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -1240,7 +1300,7 @@
 
           case 'word-to-jpg': {
             fileInput.accept = '.doc,.docx';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await readDocxText(file) || 'استخراج نص من ملف Word';
@@ -1259,14 +1319,14 @@
               outputText.value = text;
               updateStatus('تم تحويل النص داخل Word إلى صورة JPG.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'pdf-to-excel': {
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await extractPdfText(file);
@@ -1281,14 +1341,14 @@
               outputText.value = text || 'لم يتم العثور على نص في ملف PDF.';
               updateStatus('تم تحويل PDF إلى Excel.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'barcode-scanner': {
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const img = new Image();
@@ -1310,14 +1370,14 @@
                 updateStatus('تعذر قراءة الباركود من الصورة.', false);
               }
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'excel-to-jpg': {
             fileInput.accept = '.xlsx,.xls,.csv';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const data = await file.arrayBuffer();
@@ -1341,14 +1401,14 @@
               outputText.value = rows.slice(0, 10).map((row) => Array.isArray(row) ? row.join(' | ') : row).join('\n');
               updateStatus('تم تحويل بيانات Excel إلى صورة JPG.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'pdf-to-csv': {
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await extractPdfText(file);
@@ -1361,7 +1421,7 @@
               outputText.value = csv || 'لم يتم العثور على نص في PDF.';
               updateStatus('تم تحويل PDF إلى CSV.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -1382,7 +1442,7 @@
 
           case 'pdf-to-html': {
             fileInput.accept = '.pdf';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await extractPdfText(file);
@@ -1392,7 +1452,7 @@
               outputText.value = html;
               updateStatus('تم تحويل PDF إلى HTML.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
@@ -1400,7 +1460,7 @@
           case 'batch-image-to-text': {
             fileInput.multiple = true;
             fileInput.accept = 'image/*';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const files = Array.from(event.target.files || []);
               if (!files.length) return;
               const texts = [];
@@ -1414,14 +1474,14 @@
               updateStatus(`تمت معالجة ${files.length} صورة بنجاح.`, true);
               fileInput.multiple = false;
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'word-to-excel': {
             fileInput.accept = '.doc,.docx';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await readDocxText(file) || 'نص من ملف Word';
@@ -1433,14 +1493,14 @@
               outputText.value = text;
               updateStatus('تم تحويل ملف Word إلى Excel.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'ppt-to-pdf': {
             fileInput.accept = '.ppt,.pptx';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = `PowerPoint: ${file.name}\nمحتوى الملف لا يزال غير معالج بالكامل داخل المتصفح ولكن الملف تم إعداده للتصدير كملف PDF نصي.`;
@@ -1449,14 +1509,14 @@
               outputText.value = text;
               updateStatus('تم إنشاء PDF من ملف PowerPoint النصي.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'csv-to-excel': {
             fileInput.accept = '.csv,.txt';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await file.text();
@@ -1468,14 +1528,14 @@
               outputText.value = text;
               updateStatus('تم تحويل CSV إلى Excel.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'excel-to-csv': {
             fileInput.accept = '.xlsx,.xls,.csv';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const data = await file.arrayBuffer();
@@ -1487,14 +1547,14 @@
               outputText.value = csv;
               updateStatus('تم تحويل Excel إلى CSV.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
 
           case 'excel-to-pdf': {
             fileInput.accept = '.xlsx,.xls,.csv';
-            fileInput.onchange = async (event) => {
+            fileInput.onchange = safeFileHandler(async (event) => {
               const file = event.target.files?.[0];
               if (!file) return;
               const data = await file.arrayBuffer();
@@ -1507,7 +1567,7 @@
               outputText.value = text;
               updateStatus('تم تحويل Excel إلى PDF.', true);
               fileInput.value = '';
-            };
+            });
             fileInput.click();
             break;
           }
