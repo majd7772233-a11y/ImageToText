@@ -619,9 +619,9 @@
     </script>
     <script>
       const toolCatalog = [
-        { id: 'image-translator', name: 'Image Translator', desc: 'ترجمة نصوص الصور إلى لغات متعددة.' },
-        { id: 'pdf-to-word', name: 'PDF to Word', desc: 'تحويل ملفات PDF إلى مستند Word.' },
-        { id: 'jpg-to-word', name: 'JPG to Word', desc: 'تحويل الصور JPG إلى مستند Word.' },
+        { id: 'image-translator', name: 'Image Translator', desc: 'استخراج النص وترجمة مفردات محددة بقاموس عربي محلي محدود.' },
+        { id: 'pdf-to-word', name: 'PDF Text to Word', desc: 'استخراج النص من PDF وتصديره إلى DOCX دون الصور أو تخطيط الصفحة.' },
+        { id: 'jpg-to-word', name: 'Image OCR to Word', desc: 'استخراج النص من الصورة عبر OCR وتصديره إلى DOCX.' },
         { id: 'jpg-to-pdf', name: 'JPG to PDF', desc: 'تحويل الصور إلى ملف PDF.' },
         { id: 'qr-code-scanner', name: 'QR Code Scanner', desc: 'قراءة محتوى QR Codes من الصور.' },
         { id: 'pdf-to-text', name: 'PDF to Text', desc: 'استخراج نص من ملفات PDF.' },
@@ -632,21 +632,21 @@
         { id: 'word-to-pdf', name: 'Word to PDF', desc: 'تحويل مستند Word إلى PDF.' },
         { id: 'pdf-to-jpg', name: 'PDF to JPG', desc: 'تحويل PDF إلى صور JPG.' },
         { id: 'merge-pdf', name: 'Merge PDF', desc: 'دمج ملفات PDF في ملف واحد.' },
-        { id: 'jpg-to-excel', name: 'JPG to Excel', desc: 'تحويل صور JPG إلى جدول Excel.' },
+        { id: 'jpg-to-excel', name: 'Image OCR to Excel', desc: 'تحويل أسطر النص المكتشف عبر OCR إلى صفوف Excel.' },
         { id: 'qr-code-generator', name: 'QR Code Generator', desc: 'إنشاء كود QR من نص أو رابط.' },
         { id: 'word-to-jpg', name: 'Word to JPG', desc: 'تحويل Word إلى صور JPG.' },
-        { id: 'pdf-to-excel', name: 'PDF to Excel', desc: 'استخراج بيانات PDF إلى Excel.' },
-        { id: 'barcode-scanner', name: 'Barcode Scanner', desc: 'قراءة الباركود من الصور.' },
-        { id: 'excel-to-jpg', name: 'Excel to JPG', desc: 'تحويل أوراق Excel إلى JPG.' },
-        { id: 'pdf-to-csv', name: 'PDF to CSV', desc: 'استخراج جداول PDF إلى CSV.' },
-        { id: 'html-to-pdf', name: 'HTML to PDF', desc: 'تحويل ملف HTML إلى PDF.' },
-        { id: 'pdf-to-html', name: 'PDF to HTML', desc: 'تحويل PDF إلى HTML.' },
+        { id: 'pdf-to-excel', name: 'PDF Text to Excel', desc: 'استخراج النص ومحاولة فصل الأعمدة تقريبياً إلى Excel.' },
+        { id: 'barcode-scanner', name: 'Barcode Scanner', desc: 'قراءة QR وأنواع باركود متعددة من الصور.' },
+        { id: 'excel-to-jpg', name: 'Excel to JPG', desc: 'تصيير بيانات أوراق Excel إلى صور JPG ضمن ملف ZIP.' },
+        { id: 'pdf-to-csv', name: 'PDF Text to CSV', desc: 'تصدير النص وصفوف الأعمدة التقريبية من PDF إلى CSV.' },
+        { id: 'html-to-pdf', name: 'HTML Text to PDF', desc: 'تصدير النص الظاهر من HTML إلى PDF دون CSS أو صور.' },
+        { id: 'pdf-to-html', name: 'PDF Text to HTML', desc: 'تصدير النص المستخرج من PDF إلى HTML آمن دون تخطيط الصفحات.' },
         { id: 'batch-image-to-text', name: 'Batch Image to Text', desc: 'استخراج نص من عدة صور دفعة واحدة.' },
-        { id: 'word-to-excel', name: 'Word to Excel', desc: 'تحويل Word إلى Excel.' },
-        { id: 'ppt-to-pdf', name: 'PPT to PDF', desc: 'تحويل PowerPoint إلى PDF.' },
+        { id: 'word-to-excel', name: 'DOCX Text to Excel', desc: 'تصدير فقرات DOCX إلى صفوف Excel دون تنسيق المستند أو جداوله.' },
+        { id: 'ppt-to-pdf', name: 'PPTX Text to PDF', desc: 'استخراج نص شرائح PPTX إلى PDF دون التصميم أو الصور.' },
         { id: 'csv-to-excel', name: 'CSV to Excel', desc: 'تحويل CSV إلى Excel.' },
-        { id: 'excel-to-csv', name: 'Excel to CSV', desc: 'تحويل Excel إلى CSV.' },
-        { id: 'excel-to-pdf', name: 'Excel to PDF', desc: 'تحويل Excel إلى PDF.' },
+        { id: 'excel-to-csv', name: 'Excel Sheet to CSV', desc: 'تصدير ورقة Excel الأولى إلى CSV.' },
+        { id: 'excel-to-pdf', name: 'Excel Sheet to PDF', desc: 'تصدير بيانات ورقة Excel الأولى إلى PDF كنص مبسط.' },
         { id: 'image-to-text', name: 'Image to Text', desc: 'استخراج النص من الصور باستخدام OCR.' }
       ];
 
@@ -666,8 +666,8 @@
       let activeToolId = null;
 
       function updateStatus(message, isGood = false) {
-        statusEl.textContent = message;
-        statusEl.style.color = isGood ? '#166534' : '#475569';
+        statusEl.textContent = String(message == null ? '' : message);
+        statusEl.style.color = isGood ? '#91edc8' : '#c5d2e8';
       }
 
       function promptForText(title, defaultValue = '') {
@@ -726,20 +726,37 @@
         });
       }
 
-      function setPreviewFromFile(file) {
-        if (!file || !file.type.startsWith('image/')) {
-          updateStatus('الملف المحدد ليس صورة صالحة.', false);
+      function setPreviewFromFile(file, notify = true) {
+        if (!file) return;
+        selectedFile = file;
+        if (file.type && file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            previewImage.src = event.target.result;
+            previewImage.style.display = 'block';
+            placeholder.style.display = 'none';
+            if (notify) updateStatus('تم اختيار الصورة بنجاح.', true);
+          };
+          reader.onerror = () => {
+            previewImage.removeAttribute('src');
+            previewImage.style.display = 'none';
+            if (notify) updateStatus('تعذرت معاينة الصورة، لكن يمكن متابعة معالجتها.', false);
+          };
+          reader.readAsDataURL(file);
           return;
         }
-        selectedFile = file;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          previewImage.src = event.target.result;
-          previewImage.style.display = 'block';
-          placeholder.style.display = 'none';
-          updateStatus('تم اختيار الصورة بنجاح. يمكنك الآن بدء التشغيل.', true);
-        };
-        reader.readAsDataURL(file);
+        previewImage.removeAttribute('src');
+        previewImage.style.display = 'none';
+        placeholder.replaceChildren();
+        const symbol = document.createElement('span');
+        const label = document.createElement('span');
+        symbol.className = 'placeholder-symbol';
+        symbol.setAttribute('aria-hidden', 'true');
+        symbol.textContent = '▤';
+        label.textContent = file.name || 'ملف محدد';
+        placeholder.append(symbol, label);
+        placeholder.style.display = 'flex';
+        if (notify) updateStatus('تم اختيار الملف: ' + (file.name || 'ملف'), true);
       }
 
       function downloadBlob(blob, filename) {
@@ -903,7 +920,8 @@
             await handler(event);
           } catch (error) {
             console.error('ImageToText tool failed:', error);
-            updateStatus('تعذرت معالجة الملف. تحقق من نوعه وسلامته ثم أعد المحاولة.', false);
+            const detail = error && error.message ? String(error.message) : '';
+            updateStatus(detail ? 'تعذرت المعالجة: ' + detail : 'تعذرت معالجة الملف. تحقق من نوعه وسلامته ثم أعد المحاولة.', false);
           } finally {
             fileInput.multiple = false;
             fileInput.value = '';
@@ -916,6 +934,9 @@
         fileInput.onchange = null;
         fileInput.multiple = false;
         fileInput.accept = '';
+        const promptOnlyTools = new Set(['text-to-pdf', 'text-to-word', 'text-to-image', 'qr-code-generator', 'html-to-pdf']);
+        dropZone.hidden = promptOnlyTools.has(toolId);
+        processBtn.hidden = toolId !== 'image-to-text';
 
         switch (toolId) {
           case 'image-to-text': {
@@ -993,16 +1014,14 @@
                 return;
               }
               const { Document, Packer, Paragraph, TextRun } = window.docx;
-              const doc = new Document({
-                sections: [{
-                  properties: {},
-                  children: [new Paragraph({ children: [new TextRun({ text })] })]
-                }]
-              });
+              const paragraphs = text.split(/\r?\n/).map((line) =>
+                new Paragraph({ children: [new TextRun({ text: line })] })
+              );
+              const doc = new Document({ sections: [{ properties: {}, children: paragraphs }] });
               const blob = await Packer.toBlob(doc);
               downloadBlob(blob, 'converted.pdf.to.word.docx');
               outputText.value = text;
-              updateStatus('تم إنشاء ملف Word من PDF.', true);
+              updateStatus('تم تصدير النص من PDF إلى DOCX؛ الصور وتخطيط الصفحات والتنسيق الأصلي غير محفوظة.', true);
               fileInput.value = '';
             });
             fileInput.click();
@@ -1114,6 +1133,74 @@
                 canvas.width = 1;
                 canvas.height = 1;
               } finally {
+                URL.revokeObjectURL(objectUrl);
+              }
+            });
+            fileInput.click();
+            break;
+          }
+
+          case 'barcode-scanner': {
+            fileInput.accept = 'image/*';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              const library = window.ZXing;
+              if (!library || !library.MultiFormatReader || !library.RGBLuminanceSource) {
+                throw new Error('مكتبة قراءة الباركود المحلية غير متاحة.');
+              }
+              const objectUrl = URL.createObjectURL(file);
+              const reader = new library.MultiFormatReader();
+              let canvas = null;
+              try {
+                const image = new Image();
+                image.src = objectUrl;
+                await image.decode();
+                const scale = Math.min(1, 2600 / Math.max(image.naturalWidth, image.naturalHeight));
+                canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+                canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+                const context = canvas.getContext('2d', { willReadFrequently: true });
+                if (!context) throw new Error('تعذر قراءة الصورة في المتصفح.');
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+                const formats = [
+                  'QR_CODE','CODE_128','CODE_39','CODE_93','EAN_13','EAN_8',
+                  'UPC_A','UPC_E','ITF','CODABAR','DATA_MATRIX','PDF_417','AZTEC'
+                ].map((name) => library.BarcodeFormat[name]).filter((value) => value !== undefined);
+                const hints = new Map();
+                if (library.DecodeHintType && library.DecodeHintType.POSSIBLE_FORMATS !== undefined) {
+                  hints.set(library.DecodeHintType.POSSIBLE_FORMATS, formats);
+                }
+                if (library.DecodeHintType && library.DecodeHintType.TRY_HARDER !== undefined) {
+                  hints.set(library.DecodeHintType.TRY_HARDER, true);
+                }
+                reader.setHints(hints);
+                const luminance = new library.RGBLuminanceSource(pixels.data, pixels.width, pixels.height);
+                const bitmap = new library.BinaryBitmap(new library.HybridBinarizer(luminance));
+                let result;
+                try {
+                  result = reader.decode(bitmap);
+                } catch (firstError) {
+                  if (!library.InvertedLuminanceSource) throw firstError;
+                  reader.reset();
+                  const inverted = new library.InvertedLuminanceSource(luminance);
+                  result = reader.decode(new library.BinaryBitmap(new library.HybridBinarizer(inverted)));
+                }
+                const format = String(result.getBarcodeFormat());
+                outputText.value = format + '\n' + result.getText();
+                updateStatus('تمت قراءة الرمز بنجاح (' + format + ').', true);
+              } catch (error) {
+                const detail = String(error && (error.name || error.message) || '');
+                if (/NotFoundException|NotFound/i.test(detail)) {
+                  outputText.value = '';
+                  updateStatus('لم يتم العثور على باركود مدعوم في الصورة.', false);
+                } else {
+                  throw error;
+                }
+              } finally {
+                if (reader && typeof reader.reset === 'function') reader.reset();
+                if (canvas) { canvas.width = 1; canvas.height = 1; }
                 URL.revokeObjectURL(objectUrl);
               }
             });
@@ -1239,16 +1326,14 @@
               const file = event.target.files?.[0];
               if (!file) return;
               const text = await imageToText(file);
-              const rows = [
-                ['اسم الملف', 'النص المكتشف'],
-                [file.name, text || '']
-              ];
+              const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+              const rows = [['اسم الملف', 'النص المكتشف']].concat(lines.map((line) => [file.name, line]));
               const worksheet = XLSX.utils.aoa_to_sheet(rows);
               const workbook = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
               XLSX.writeFile(workbook, 'image-to-excel.xlsx');
               outputText.value = text || 'لا يوجد نص واضح في الصورة.';
-              updateStatus('تم إنشاء ملف Excel من الصورة.', true);
+              updateStatus('تم تصدير أسطر OCR إلى صفوف Excel؛ لم يتم التعرف على خلايا جدول بصري.', true);
               fileInput.value = '';
             });
             fileInput.click();
@@ -1485,6 +1570,125 @@
             break;
           }
 
+          case 'excel-to-jpg': {
+            fileInput.accept = '.xlsx,.xls,.csv';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              if (!window.JSZip) throw new Error('مكتبة ZIP المحلية غير متاحة.');
+              const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+              if (!workbook.SheetNames.length) throw new Error('لم يتم العثور على أوراق عمل داخل الملف.');
+              const archive = new JSZip();
+              let pageCount = 0;
+              let rowCount = 0;
+              for (const sheetName of workbook.SheetNames) {
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet, {
+                  header: 1, raw: false, defval: '', blankrows: false
+                }).filter((row) => row.some((cell) => String(cell == null ? '' : cell).trim() !== ''));
+                if (!rows.length) continue;
+                rowCount += rows.length;
+                const columnCount = Math.max(...rows.map((row) => row.length));
+                const safeSheetName = sheetName.replace(/[\\/:*?"<>|]/g, '_').slice(0, 48) || 'Sheet';
+                for (let rowStart = 0; rowStart < rows.length; rowStart += 24) {
+                  for (let columnStart = 0; columnStart < columnCount; columnStart += 7) {
+                    const pageRows = rows.slice(rowStart, rowStart + 24).map((row) =>
+                      Array.from({ length: Math.min(7, columnCount - columnStart) }, (_, index) =>
+                        row[columnStart + index] == null ? '' : String(row[columnStart + index])
+                      )
+                    );
+                    const columnCountOnPage = pageRows.reduce((max, row) => Math.max(max, row.length), 0);
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    if (!context) throw new Error('تعذر إنشاء لوحة رسم لتصدير ورقة Excel.');
+                    const font = '13px Tahoma, Segoe UI, sans-serif';
+                    context.font = font;
+                    const columnWidths = Array.from({ length: columnCountOnPage }, (_, column) => {
+                      const measured = Math.max(0, ...pageRows.slice(0, 12).map((row) => context.measureText(row[column] || '').width));
+                      return Math.max(112, Math.min(270, Math.ceil(measured + 28)));
+                    });
+                    const wrapCell = (value, maxWidth) => {
+                      const paragraphs = String(value == null ? '' : value).replace(/\r/g, '').split('\n');
+                      const lines = [];
+                      paragraphs.forEach((paragraph) => {
+                        const words = paragraph.split(/\s+/).filter(Boolean);
+                        if (!words.length) { lines.push(''); return; }
+                        let line = '';
+                        words.forEach((word) => {
+                          const candidate = line ? line + ' ' + word : word;
+                          if (line && context.measureText(candidate).width > maxWidth - 20) {
+                            lines.push(line);
+                            line = word;
+                          } else line = candidate;
+                        });
+                        if (line) lines.push(line);
+                      });
+                      return lines.length ? lines : [''];
+                    };
+                    const layouts = pageRows.map((row) => {
+                      const cells = Array.from({ length: columnCountOnPage }, (_, column) => wrapCell(row[column] || '', columnWidths[column]));
+                      return { cells, height: Math.max(42, Math.max(1, ...cells.map((lines) => lines.length)) * 20 + 16) };
+                    });
+                    const margin = 28;
+                    const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+                    const tableHeight = layouts.reduce((sum, item) => sum + item.height, 0);
+                    canvas.width = tableWidth + margin * 2;
+                    canvas.height = 92 + tableHeight + margin;
+                    context.fillStyle = '#f3f6fc';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    context.direction = /[\u0590-\u08FF]/.test(sheetName) ? 'rtl' : 'ltr';
+                    context.textAlign = context.direction === 'rtl' ? 'right' : 'left';
+                    context.fillStyle = '#16233e';
+                    context.font = 'bold 22px Tahoma, Segoe UI, sans-serif';
+                    context.fillText(sheetName, context.direction === 'rtl' ? canvas.width - margin : margin, 38);
+                    context.fillStyle = '#61718f';
+                    context.font = '12px Tahoma, Segoe UI, sans-serif';
+                    context.textAlign = 'left';
+                    context.fillText('ImageToText · ' + (rowStart + 1) + '-' + Math.min(rowStart + 24, rows.length), margin, 64);
+                    let y = 92;
+                    layouts.forEach((layout, rowIndex) => {
+                      let x = margin;
+                      const header = rowStart === 0 && rowIndex === 0;
+                      layout.cells.forEach((lines, columnIndex) => {
+                        const width = columnWidths[columnIndex];
+                        context.fillStyle = header ? '#dce7fb' : (rowIndex % 2 ? '#ffffff' : '#f8faff');
+                        context.fillRect(x, y, width, layout.height);
+                        context.strokeStyle = '#cbd6e8';
+                        context.lineWidth = 1;
+                        context.strokeRect(x, y, width, layout.height);
+                        const rtl = lines.some((line) => /[\u0590-\u08FF]/.test(line));
+                        context.direction = rtl ? 'rtl' : 'ltr';
+                        context.textAlign = rtl ? 'right' : 'left';
+                        context.fillStyle = header ? '#172846' : '#26364f';
+                        context.font = header ? 'bold 13px Tahoma, Segoe UI, sans-serif' : font;
+                        lines.forEach((line, lineIndex) => {
+                          context.fillText(line, rtl ? x + width - 10 : x + 10, y + 9 + lineIndex * 20, width - 20);
+                        });
+                        x += width;
+                      });
+                      y += layout.height;
+                    });
+                    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+                    if (!blob) throw new Error('تعذر إنشاء صورة JPG لورقة ' + sheetName + '.');
+                    pageCount += 1;
+                    archive.file(safeSheetName + '-page-' + String(pageCount).padStart(3, '0') + '.jpg', blob);
+                    canvas.width = 1;
+                    canvas.height = 1;
+                  }
+                }
+              }
+              if (!pageCount) throw new Error('لا توجد بيانات قابلة للتصدير في أوراق العمل.');
+              const zipBlob = await archive.generateAsync({
+                type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 }
+              });
+              downloadBlob(zipBlob, file.name.replace(/\.(xlsx|xls|csv)$/i, '') + '-sheets-jpg.zip');
+              outputText.value = 'تم تصدير ' + rowCount + ' صفاً من أوراق العمل إلى ' + pageCount + ' صور JPG داخل ZIP.';
+              updateStatus('تم تصدير البيانات من جميع أوراق العمل إلى صور JPG؛ التنسيق الأصلي والرسوم البيانية لا يتم الاحتفاظ بهما.', true);
+            });
+            fileInput.click();
+            break;
+          }
+
           case 'excel-to-csv': {
             fileInput.accept = '.xlsx,.xls,.csv';
             fileInput.onchange = safeFileHandler(async (event) => {
@@ -1494,8 +1698,8 @@
               const workbook = XLSX.read(data, { type: 'array' });
               const sheet = workbook.Sheets[workbook.SheetNames[0]];
               const csv = XLSX.utils.sheet_to_csv(sheet);
-              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-              downloadBlob(blob, 'excel-to-csv.csv');
+              const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+              downloadBlob(blob, file.name.replace(/\.(xlsx|xls|csv)$/i, '') + '.csv');
               outputText.value = csv;
               updateStatus('تم تحويل Excel إلى CSV.', true);
               fileInput.value = '';
@@ -1512,12 +1716,12 @@
               const data = await file.arrayBuffer();
               const workbook = XLSX.read(data, { type: 'array' });
               const sheet = workbook.Sheets[workbook.SheetNames[0]];
-              const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false }).slice(0, 30);
+              const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '', blankrows: false });
               const text = rows.map((row) => Array.isArray(row) ? row.join(' | ') : row).join('\n');
               const blob = textToPdfBlob(text || 'Excel to PDF');
               downloadBlob(blob, 'excel-to-pdf.pdf');
               outputText.value = text;
-              updateStatus('تم تحويل Excel إلى PDF.', true);
+              updateStatus('تم تصدير جميع صفوف ورقة Excel الأولى إلى PDF كنص مبسط؛ التنسيق والرسوم والأوراق الأخرى غير مضمنة.', true);
               fileInput.value = '';
             });
             fileInput.click();
@@ -1525,7 +1729,7 @@
           }
 
           default:
-            updateStatus('هذه الأداة متاحة داخل المشروع وتقوم بمعالجة محلية داخل المتصفح.', true);
+            updateStatus('لا يوجد معالج فعلي لهذه الأداة بعد؛ لم يتم تنفيذ أي تحويل.', false);
             break;
         }
       }
@@ -1533,11 +1737,8 @@
       renderToolCatalog();
       pickFileBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (event) => {
-        if (activeToolId === 'image-to-text' || activeToolId === 'qr-code-scanner' || activeToolId === 'barcode-scanner' || activeToolId === 'invert-image' || activeToolId === 'jpg-to-pdf' || activeToolId === 'jpg-to-word' || activeToolId === 'jpg-to-excel' || activeToolId === 'pdf-to-text' || activeToolId === 'pdf-to-word' || activeToolId === 'pdf-to-jpg' || activeToolId === 'pdf-to-excel' || activeToolId === 'pdf-to-csv' || activeToolId === 'pdf-to-html' || activeToolId === 'word-to-pdf' || activeToolId === 'word-to-jpg' || activeToolId === 'excel-to-jpg' || activeToolId === 'excel-to-csv' || activeToolId === 'excel-to-pdf' || activeToolId === 'csv-to-excel' || activeToolId === 'batch-image-to-text' || activeToolId === 'merge-pdf' || activeToolId === 'ppt-to-pdf') {
-          return;
-        }
         const file = event.target.files && event.target.files[0];
-        if (file) setPreviewFromFile(file);
+        if (file) setPreviewFromFile(file, false);
       });
 
       ['dragenter', 'dragover'].forEach((eventName) => {
@@ -1555,11 +1756,22 @@
       });
 
       dropZone.addEventListener('drop', (event) => {
-        const file = event.dataTransfer.files && event.dataTransfer.files[0];
-        if (file) setPreviewFromFile(file);
+        const files = event.dataTransfer && event.dataTransfer.files;
+        if (!files || !files.length) return;
+        try {
+          fileInput.files = files;
+          fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (error) {
+          setPreviewFromFile(files[0]);
+          updateStatus('تعذر بدء المعالجة من السحب والإفلات؛ استخدم زر اختيار الملف.', false);
+        }
       });
 
       async function readTextFromImage() {
+        if (activeToolId && activeToolId !== 'image-to-text') {
+          updateStatus('زر التعرف اليدوي متاح داخل أداة Image to Text فقط.', false);
+          return;
+        }
         if (!selectedFile) {
           updateStatus('يرجى اختيار صورة أولا.', false);
           return;
@@ -1572,14 +1784,7 @@
         processBtn.textContent = 'جاري التعرف...';
         updateStatus('جاري قراءة الصورة وتحويلها إلى نص...', false);
         try {
-          const result = await Tesseract.recognize(selectedFile, 'ara+eng', {
-            logger: (progress) => {
-              if (progress && progress.status === 'recognizing text') {
-                updateStatus(`جاري التعرف: ${Math.round(progress.progress * 100)}%`, false);
-              }
-            }
-          });
-          const text = (result?.data?.text || '').trim();
+          const text = await imageToText(selectedFile);
           outputText.value = text || 'لم يتم العثور على نص في هذه الصورة.';
           updateStatus(text ? 'تم استخراج النص بنجاح.' : 'تمت معالجة الصورة بدون نص واضح.', true);
         } catch (error) {
@@ -1594,7 +1799,6 @@
       processBtn.addEventListener('click', readTextFromImage);
 
       clearBtn.addEventListener('click', () => {
-        activeToolId = null;
         selectedFile = null;
         fileInput.value = '';
         previewImage.removeAttribute('src');
