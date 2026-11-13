@@ -65,10 +65,12 @@ test("Arabic PDF output is paginated and its raster limitation is disclosed", ()
   assert.match(appScript, /function wrapCanvasParagraph/);
 });
 
-test("image-to-PDF conversion calculates a proportional fit instead of stretching", () => {
-  assert.match(appScript, /const fit = Math\.min\(pageWidth \/ img\.width, pageHeight \/ img\.height\)/);
-  assert.match(appScript, /const x = \(pageWidth - imageWidth\) \/ 2/);
-  assert.match(appScript, /const y = \(pageHeight - imageHeight\) \/ 2/);
+test("image-to-PDF accepts one or many images and fits each image proportionally", () => {
+  assert.match(appScript, /case 'jpg-to-pdf':\s*\{[\s\S]*?fileInput\.multiple = true/);
+  assert.match(appScript, /const files = Array\.from\(event\.target\.files \|\| \[\]\)/);
+  assert.match(appScript, /ImageToTextUtils\.fitImageToPage\(data\.sourceWidth, data\.sourceHeight, pageWidth, pageHeight\)/);
+  assert.match(appScript, /pdf\.addPage\('a4', orientation\)/);
+  assert.match(appScript, /تم وضع كل صورة في صفحة مستقلة/);
 });
 
 test("text-to-image uses the shared wrapping and multi-page canvas renderer", () => {
