@@ -5,6 +5,7 @@
   const tools = Array.isArray(toolCatalog) ? toolCatalog : [];
   const byId = new Map(tools.map((tool) => [tool.id, tool]));
   const categoryNames = {
+    data: "نصوص وبيانات",
     images: "الصور وOCR",
     pdf: "ملفات PDF",
     office: "المستندات والجداول",
@@ -39,7 +40,14 @@
     "csv-to-excel": "CSV",
     "excel-to-csv": "CSV",
     "excel-to-pdf": "▤",
-    "image-to-text": "OCR"
+    "image-to-text": "OCR",
+    "split-pdf": "ZIP", "extract-pdf-pages": "PDF", "delete-pdf-pages": "PDF",
+    "rotate-pdf-pages": "↻", "number-pdf-pages": "123", "reorder-pdf-pages": "↕", "inspect-pdf": "PDF",
+    "image-resize": "↔", "image-compress": "IMG", "image-format-converter": "IMG",
+    "image-watermark": "WM", "image-color-palette": "◉", "image-inspector": "IMG",
+    "json-formatter": "{}", "json-minifier": "{}", "csv-to-json": "CSV", "json-to-csv": "CSV",
+    "text-cleaner": "TXT", "remove-duplicate-lines": "TXT", "sort-text-lines": "TXT",
+    "text-statistics": "TXT", "find-replace-text": "TXT", "word-to-text": "DOCX"
   };
 
   const byIdElement = (id) => document.getElementById(id);
@@ -48,13 +56,14 @@
   const homeScreen = byIdElement("homeScreen");
   const toolScreen = byIdElement("toolScreen");
   const search = byIdElement("toolSearch");
+  const mainSearch = byIdElement("toolSearchMain");
   const emptyState = byIdElement("emptySearchState");
   const visibleToolCount = byIdElement("visibleToolCount");
   const categoryButtons = Array.from(document.querySelectorAll("[data-category-filter]"));
   let activeCategory = "all";
   let activeTool = null;
   let previewObjectUrl = null;
-  const catalogCounts = { all: tools.length, images: 0, pdf: 0, office: 0, codes: 0 };
+  const catalogCounts = { all: tools.length, images: 0, pdf: 0, office: 0, codes: 0, data: 0 };
   tools.forEach((tool) => { catalogCounts[categoryFor(tool.id)] += 1; });
   Object.keys(catalogCounts).forEach((category) => {
     const count = document.querySelector('[data-category-count="' + category + '"]');
@@ -65,6 +74,7 @@
 
   function categoryFor(toolId) {
     if (toolId.indexOf("qr-") === 0 || toolId.indexOf("barcode-") === 0) return "codes";
+    if (["json-formatter", "json-minifier", "csv-to-json", "json-to-csv", "text-cleaner", "remove-duplicate-lines", "sort-text-lines", "text-statistics", "find-replace-text"].includes(toolId)) return "data";
     if (toolId.indexOf("pdf") !== -1) return "pdf";
     if (
       toolId.indexOf("image") !== -1 ||
@@ -139,6 +149,12 @@
     });
     const count = byIdElement("toolCount");
     if (count) count.textContent = String(tools.length);
+    const headerCount = document.querySelector(".workspace-pill strong");
+    if (headerCount) headerCount.textContent = tools.length + " أداة";
+    const heroCount = document.querySelector(".hero-stat strong");
+    if (heroCount) heroCount.textContent = String(tools.length);
+    const featureCount = document.querySelector(".home-feature strong");
+    if (featureCount) featureCount.textContent = tools.length + " أداة";
   }
 
   function normalizeSearch(value) {
@@ -146,7 +162,7 @@
   }
 
   function applyFilters() {
-    const query = normalizeSearch(search ? search.value : "");
+    const query = normalizeSearch((mainSearch && mainSearch.value) || (search && search.value) || "");
     let visible = 0;
     tools.forEach((tool) => {
       const category = categoryFor(tool.id);
@@ -243,16 +259,21 @@
     });
   });
 
-  if (search) {
-    search.addEventListener("input", applyFilters);
-    search.addEventListener("keydown", function (event) {
+  [search, mainSearch].filter(Boolean).forEach((input) => {
+    input.addEventListener("input", function () {
+      const other = input === search ? mainSearch : search;
+      if (other && other.value !== input.value) other.value = input.value;
+      applyFilters();
+    });
+    input.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
-        search.value = "";
+        input.value = "";
+        [search, mainSearch].filter(Boolean).forEach((other) => { other.value = ""; });
         applyFilters();
-        search.blur();
+        input.blur();
       }
     });
-  }
+  });
 
   const exploreTools = byIdElement("exploreToolsBtn");
   if (exploreTools) exploreTools.addEventListener("click", function () {
@@ -334,7 +355,8 @@
   document.addEventListener("keydown", function (event) {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
       event.preventDefault();
-      if (search) search.focus();
+      if (mainSearch) mainSearch.focus();
+      else if (search) search.focus();
     }
     if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
       closeMobileSidebar();

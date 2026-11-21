@@ -21,7 +21,22 @@ test("the home screen and dedicated tool screen are present", () => {
 
 test("all catalog tools still have a dedicated catalog entry", () => {
   const entries = html.match(/\{ id: '[a-z0-9-]+', name:/g) || [];
-  assert.equal(entries.length, 29);
+  assert.equal(entries.length, 52);
+});
+
+test("the full tool library is placed before the welcome hero", () => {
+  assert.ok(html.indexOf('id="librarySection"') < html.indexOf('class="home-hero glass-surface"'));
+  assert.match(html, /id="toolSearchMain"/);
+  assert.match(html, /class="main-library-search"/);
+});
+
+test("professional tools and the data category are loaded into the workspace", () => {
+  assert.match(html, /script\/professional-tools\.js/);
+  assert.match(html, /data-category-filter="data"/);
+  assert.match(html, /data-category-count="data"/);
+  assert.match(shell, /const mainSearch = byIdElement\("toolSearchMain"\)/);
+  assert.match(shell, /catalogCounts = \{[^}]*data: 0/);
+  assert.match(styles, /\.main-library-search \{/);
 });
 
 test("navigation and workspace scripts are linked", () => {

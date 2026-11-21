@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node scripts/serve.cjs",
     "test": "node --test",
-    "check": "node --check script/app-shell.js && node --check script/liquid-hero.js && node --check script/format-utils.js && node --check scripts/serve.cjs && node --check tests/ui-shell.test.cjs && node --check tests/tool-audit.test.cjs && node --check tests/serve.test.cjs"
+    "check": "node --check script/app-shell.js && node --check script/liquid-hero.js && node --check script/format-utils.js && node --check script/professional-tools.js && node --check scripts/serve.cjs && node --check tests/ui-shell.test.cjs && node --check tests/professional-tools.test.cjs && node --check tests/tool-audit.test.cjs && node --check tests/serve.test.cjs"
   },
   "keywords": [
     "image-to-text",

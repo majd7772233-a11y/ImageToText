@@ -427,11 +427,12 @@
             <span class="nav-symbol" aria-hidden="true">▦</span>
             <span>QR والباركود</span>
           </button>
+          <button type="button" class="sidebar-nav-item category-filter" data-category-filter="data"><span class="nav-symbol" aria-hidden="true">{}</span><span>نصوص وبيانات</span></button>
         </nav>
 
         <div class="sidebar-tools-heading">
           <span>الأدوات</span>
-          <span id="toolCount" class="tool-count">29</span>
+          <span id="toolCount" class="tool-count">52</span>
         </div>
         <nav id="toolNavList" class="sidebar-tools" aria-label="قائمة الأدوات"></nav>
 
@@ -454,12 +455,39 @@
             </div>
           </div>
           <div class="topbar-right">
-            <span class="workspace-pill"><span class="workspace-dot"></span><span>مساحة عمل موحّدة</span><i aria-hidden="true"></i><strong>29 أداة</strong></span>
+            <span class="workspace-pill"><span class="workspace-dot"></span><span>مساحة عمل موحّدة</span><i aria-hidden="true"></i><strong>52 أداة</strong></span>
           </div>
         </header>
 
         <main class="main-content">
           <section id="homeScreen" class="home-screen" aria-labelledby="homeTitle">
+            <section id="librarySection" class="tool-section library-section" aria-label="مكتبة الأدوات">
+              <div class="section-heading">
+                <div><p class="section-kicker">THE TOOL LIBRARY</p><h2>كل ما تحتاجه، منظّم أمامك.</h2></div>
+                <div class="library-heading-side">
+                  <p class="section-description">اختر الأداة المناسبة، وانتقل مباشرة إلى مساحة عملها.</p>
+                  <div class="library-summary" aria-live="polite"><strong id="visibleToolCount">52</strong><span>أداة معروضة</span><i aria-hidden="true"></i><small>من أصل 52</small></div>
+                </div>
+              </div>
+
+              <label class="main-library-search" for="toolSearchMain">
+                <span aria-hidden="true">⌕</span>
+                <input id="toolSearchMain" type="search" aria-label="ابحث في الأدوات" placeholder="ابحث باسم الأداة أو نوع الملف أو الامتداد..." autocomplete="off" />
+                <kbd>Ctrl K</kbd>
+              </label>
+              <div id="categoryChips" class="category-chips" aria-label="تصفية الأدوات">
+                <button type="button" class="category-chip is-active" data-category-filter="all" aria-pressed="true"><span>الكل</span><small data-category-count="all">52</small></button>
+                <button type="button" class="category-chip" data-category-filter="images" aria-pressed="false"><span>الصور وOCR</span><small data-category-count="images">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="pdf" aria-pressed="false"><span>PDF</span><small data-category-count="pdf">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="office" aria-pressed="false"><span>Office</span><small data-category-count="office">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="codes" aria-pressed="false"><span>QR والباركود</span><small data-category-count="codes">—</small></button>
+                <button type="button" class="category-chip" data-category-filter="data" aria-pressed="false"><span>نصوص وبيانات</span><small data-category-count="data">0</small></button>
+              </div>
+
+              <div id="toolGrid" class="tool-grid"></div>
+              <p id="emptySearchState" class="empty-search-state" hidden>لم نعثر على أداة تطابق بحثك.</p>
+            </section>
+
             <section class="home-hero glass-surface">
               <div class="hero-copy">
                 <p class="hero-eyebrow"><span class="eyebrow-dot"></span><span class="hero-eyebrow-label">SMART WORKSPACE</span><i aria-hidden="true"></i> كل أدواتك في مكان واحد</p>
@@ -468,7 +496,7 @@
                 <div class="hero-actions">
                   <button type="button" id="startOcrBtn" class="primary-cta"><span aria-hidden="true">✧</span>ابدأ باستخراج النص</button>
                   <button type="button" id="exploreToolsBtn" class="secondary-cta"><span>استكشف الأدوات</span><span aria-hidden="true">↙</span></button>
-                  <span class="hero-stat"><strong>29</strong><span>أداة بين يديك</span></span>
+                  <span class="hero-stat"><strong>52</strong><span>أداة بين يديك</span></span>
                 </div>
                 <div class="hero-trust-row" aria-label="مميزات مساحة العمل">
                   <span><i aria-hidden="true">✓</i> تصنيفات واضحة</span>
@@ -498,31 +526,12 @@
             </section>
 
             <section class="home-feature-strip" aria-label="نظرة سريعة على مساحة العمل">
-              <div class="home-feature"><span class="home-feature-icon" aria-hidden="true">▦</span><div><strong>29 أداة</strong><small>لمختلف مهام الصور والملفات</small></div><span class="home-feature-index">01</span></div>
+              <div class="home-feature"><span class="home-feature-icon" aria-hidden="true">▦</span><div><strong>52 أداة</strong><small>لمختلف مهام الصور والملفات</small></div><span class="home-feature-index">01</span></div>
               <div class="home-feature"><span class="home-feature-icon home-feature-icon-violet" aria-hidden="true">◇</span><div><strong>4 فئات منظمة</strong><small>اعثر على ما تحتاجه بسرعة</small></div><span class="home-feature-index">02</span></div>
               <div class="home-feature"><span class="home-feature-icon home-feature-icon-mint" aria-hidden="true">↗</span><div><strong>3 خطوات واضحة</strong><small>إضافة الملف ثم المعاينة والنتيجة</small></div><span class="home-feature-index">03</span></div>
             </section>
 
-            <section id="librarySection" class="tool-section library-section" aria-label="مكتبة الأدوات">
-              <div class="section-heading">
-                <div><p class="section-kicker">THE TOOL LIBRARY</p><h2>كل ما تحتاجه، منظّم أمامك.</h2></div>
-                <div class="library-heading-side">
-                  <p class="section-description">اختر الأداة المناسبة، وانتقل مباشرة إلى مساحة عملها.</p>
-                  <div class="library-summary" aria-live="polite"><strong id="visibleToolCount">29</strong><span>أداة معروضة</span><i aria-hidden="true"></i><small>من أصل 29</small></div>
-                </div>
-              </div>
 
-              <div id="categoryChips" class="category-chips" aria-label="تصفية الأدوات">
-                <button type="button" class="category-chip is-active" data-category-filter="all" aria-pressed="true"><span>الكل</span><small data-category-count="all">29</small></button>
-                <button type="button" class="category-chip" data-category-filter="images" aria-pressed="false"><span>الصور وOCR</span><small data-category-count="images">—</small></button>
-                <button type="button" class="category-chip" data-category-filter="pdf" aria-pressed="false"><span>PDF</span><small data-category-count="pdf">—</small></button>
-                <button type="button" class="category-chip" data-category-filter="office" aria-pressed="false"><span>Office</span><small data-category-count="office">—</small></button>
-                <button type="button" class="category-chip" data-category-filter="codes" aria-pressed="false"><span>QR والباركود</span><small data-category-count="codes">—</small></button>
-              </div>
-
-              <div id="toolGrid" class="tool-grid"></div>
-              <p id="emptySearchState" class="empty-search-state" hidden>لم نعثر على أداة تطابق بحثك.</p>
-            </section>
           </section>
 
           <section id="toolScreen" class="tool-screen" hidden aria-labelledby="activeToolName">
@@ -607,6 +616,7 @@
     <script src="./node_modules/jszip/dist/jszip.min.js"></script>
     <script src="./node_modules/qrcode/build/qrcode.js"></script>
     <script src="./script/format-utils.js"></script>
+    <script src="./script/professional-tools.js"></script>
     <script src="./node_modules/mammoth/mammoth.browser.min.js"></script>
     <script src="./node_modules/jsqr/dist/jsQR.js"></script>
     <script src="./node_modules/pdf-lib/dist/pdf-lib.min.js"></script>
@@ -619,35 +629,58 @@
     </script>
     <script>
       const toolCatalog = [
-        { id: 'image-translator', name: 'OCR + Dictionary', desc: 'استخراج النص وترجمة مفردات محددة بقاموس عربي محلي محدود، وليس ترجمة عامة.' },
-        { id: 'pdf-to-word', name: 'PDF Text to Word', desc: 'استخراج النص من PDF وتصديره إلى DOCX دون الصور أو تخطيط الصفحة.' },
-        { id: 'jpg-to-word', name: 'Image OCR to Word', desc: 'استخراج النص من الصورة عبر OCR وتصديره إلى DOCX.' },
-        { id: 'jpg-to-pdf', name: 'Images to PDF', desc: 'جمع صورة واحدة أو عدة صور في ملف PDF متعدد الصفحات مع الحفاظ على نسب الأبعاد.' },
-        { id: 'qr-code-scanner', name: 'QR Code Scanner', desc: 'قراءة محتوى QR Codes من الصور.' },
-        { id: 'pdf-to-text', name: 'PDF to Text', desc: 'استخراج نص من ملفات PDF.' },
-        { id: 'text-to-pdf', name: 'Text to PDF', desc: 'تحويل النص إلى ملف PDF.' },
-        { id: 'text-to-word', name: 'Text to Word', desc: 'تحويل نص عادي إلى Word.' },
-        { id: 'invert-image', name: 'Invert Image', desc: 'عكس ألوان الصورة.' },
-        { id: 'text-to-image', name: 'Text to Image', desc: 'إنشاء صورة أو صفحات PNG متعددة من النص مع دعم التفاف الأسطر العربية.' },
-        { id: 'word-to-pdf', name: 'Word to PDF', desc: 'تحويل مستند Word إلى PDF.' },
-        { id: 'pdf-to-jpg', name: 'PDF to JPG', desc: 'تحويل PDF إلى صور JPG.' },
-        { id: 'merge-pdf', name: 'Merge PDF', desc: 'دمج ملفات PDF في ملف واحد.' },
-        { id: 'jpg-to-excel', name: 'Image OCR to Excel', desc: 'تحويل أسطر النص المكتشف عبر OCR إلى صفوف Excel.' },
-        { id: 'qr-code-generator', name: 'QR Code Generator', desc: 'إنشاء كود QR من نص أو رابط.' },
-        { id: 'word-to-jpg', name: 'Word to JPG', desc: 'تصدير نص DOCX إلى صورة JPG أو صفحات متعددة داخل ZIP دون تنسيق المستند الأصلي.' },
-        { id: 'pdf-to-excel', name: 'PDF Text to Excel', desc: 'استخراج النص ومحاولة فصل الأعمدة تقريبياً إلى Excel.' },
-        { id: 'barcode-scanner', name: 'Barcode Scanner', desc: 'قراءة QR وأنواع باركود متعددة من الصور.' },
-        { id: 'excel-to-jpg', name: 'Excel to JPG', desc: 'تصيير بيانات أوراق Excel إلى صور JPG ضمن ملف ZIP.' },
-        { id: 'pdf-to-csv', name: 'PDF Text to CSV', desc: 'تصدير النص وصفوف الأعمدة التقريبية من PDF إلى CSV.' },
-        { id: 'html-to-pdf', name: 'HTML Text to PDF', desc: 'تصدير النص الظاهر من HTML إلى PDF دون CSS أو صور.' },
-        { id: 'pdf-to-html', name: 'PDF Text to HTML', desc: 'تصدير النص المستخرج من PDF إلى HTML آمن دون تخطيط الصفحات.' },
-        { id: 'batch-image-to-text', name: 'Batch Image to Text', desc: 'استخراج نص من عدة صور دفعة واحدة.' },
-        { id: 'word-to-excel', name: 'DOCX Text to Excel', desc: 'تصدير فقرات DOCX إلى صفوف Excel دون تنسيق المستند أو جداوله.' },
-        { id: 'ppt-to-pdf', name: 'PPTX Text to PDF', desc: 'استخراج نص شرائح PPTX إلى PDF دون التصميم أو الصور.' },
-        { id: 'csv-to-excel', name: 'CSV to Excel', desc: 'تحويل CSV إلى Excel.' },
-        { id: 'excel-to-csv', name: 'Excel Sheet to CSV', desc: 'تصدير ورقة Excel الأولى إلى CSV.' },
-        { id: 'excel-to-pdf', name: 'Excel Sheet to PDF', desc: 'تصدير بيانات ورقة Excel الأولى إلى PDF كنص مبسط.' },
-        { id: 'image-to-text', name: 'Image to Text', desc: 'استخراج النص من الصور باستخدام OCR.' }
+        { id: 'image-translator', name: 'التعرّف الضوئي والترجمة المحدودة', desc: 'استخراج النص وترجمة مفردات محددة بقاموس عربي محلي محدود، وليس ترجمة عامة.' },
+        { id: 'pdf-to-word', name: 'تحويل PDF إلى Word', desc: 'استخراج النص من PDF وتصديره إلى DOCX دون الصور أو تخطيط الصفحة.' },
+        { id: 'jpg-to-word', name: 'تحويل الصور إلى Word', desc: 'استخراج النص من الصورة عبر OCR وتصديره إلى DOCX.' },
+        { id: 'jpg-to-pdf', name: 'تحويل الصور إلى PDF', desc: 'جمع صورة واحدة أو عدة صور في ملف PDF متعدد الصفحات مع الحفاظ على نسب الأبعاد.' },
+        { id: 'qr-code-scanner', name: 'قارئ رمز QR', desc: 'قراءة محتوى QR Codes من الصور.' },
+        { id: 'pdf-to-text', name: 'استخراج النص من PDF', desc: 'استخراج نص من ملفات PDF.' },
+        { id: 'text-to-pdf', name: 'تحويل النص إلى PDF', desc: 'تحويل النص إلى ملف PDF.' },
+        { id: 'text-to-word', name: 'تحويل النص إلى Word', desc: 'تحويل نص عادي إلى Word.' },
+        { id: 'invert-image', name: 'عكس ألوان الصورة', desc: 'عكس ألوان الصورة.' },
+        { id: 'text-to-image', name: 'تحويل النص إلى صورة', desc: 'إنشاء صورة أو صفحات PNG متعددة من النص مع دعم التفاف الأسطر العربية.' },
+        { id: 'word-to-pdf', name: 'تحويل Word إلى PDF', desc: 'تحويل مستند Word إلى PDF.' },
+        { id: 'pdf-to-jpg', name: 'تحويل صفحات PDF إلى صور', desc: 'تحويل PDF إلى صور JPG.' },
+        { id: 'merge-pdf', name: 'دمج ملفات PDF', desc: 'دمج ملفات PDF في ملف واحد.' },
+        { id: 'jpg-to-excel', name: 'استخراج النص من الصور إلى Excel', desc: 'تحويل أسطر النص المكتشف عبر OCR إلى صفوف Excel.' },
+        { id: 'qr-code-generator', name: 'إنشاء رمز QR', desc: 'إنشاء كود QR من نص أو رابط.' },
+        { id: 'word-to-jpg', name: 'تحويل Word إلى صور', desc: 'تصدير نص DOCX إلى صورة JPG أو صفحات متعددة داخل ZIP دون تنسيق المستند الأصلي.' },
+        { id: 'pdf-to-excel', name: 'استخراج بيانات PDF إلى Excel', desc: 'استخراج النص ومحاولة فصل الأعمدة تقريبياً إلى Excel.' },
+        { id: 'barcode-scanner', name: 'قارئ الباركود', desc: 'قراءة QR وأنواع باركود متعددة من الصور.' },
+        { id: 'excel-to-jpg', name: 'تحويل Excel إلى صور', desc: 'تصيير بيانات أوراق Excel إلى صور JPG ضمن ملف ZIP.' },
+        { id: 'pdf-to-csv', name: 'استخراج PDF إلى CSV', desc: 'تصدير النص وصفوف الأعمدة التقريبية من PDF إلى CSV.' },
+        { id: 'html-to-pdf', name: 'تحويل HTML إلى PDF', desc: 'تصدير النص الظاهر من HTML إلى PDF دون CSS أو صور.' },
+        { id: 'pdf-to-html', name: 'استخراج PDF إلى HTML', desc: 'تصدير النص المستخرج من PDF إلى HTML آمن دون تخطيط الصفحات.' },
+        { id: 'batch-image-to-text', name: 'استخراج النص من صور متعددة', desc: 'استخراج نص من عدة صور دفعة واحدة.' },
+        { id: 'word-to-excel', name: 'تحويل Word إلى Excel', desc: 'تصدير فقرات DOCX إلى صفوف Excel دون تنسيق المستند أو جداوله.' },
+        { id: 'ppt-to-pdf', name: 'استخراج نص PowerPoint إلى PDF', desc: 'استخراج نص شرائح PPTX إلى PDF دون التصميم أو الصور.' },
+        { id: 'csv-to-excel', name: 'تحويل CSV إلى Excel', desc: 'تحويل CSV إلى Excel.' },
+        { id: 'excel-to-csv', name: 'تحويل Excel إلى CSV', desc: 'تصدير ورقة Excel الأولى إلى CSV.' },
+        { id: 'excel-to-pdf', name: 'تحويل Excel إلى PDF', desc: 'تصدير بيانات ورقة Excel الأولى إلى PDF كنص مبسط.' },
+        { id: 'image-to-text', name: 'استخراج النص من صورة (OCR)', desc: 'استخراج النص من الصور باستخدام OCR.' },
+        { id: 'split-pdf', name: 'تقسيم PDF إلى صفحات منفصلة', desc: 'إنشاء ملف PDF مستقل لكل صفحة وتجميع النتائج في ZIP.' },
+        { id: 'extract-pdf-pages', name: 'استخراج صفحات PDF محددة', desc: 'اختيار صفحات أو نطاقات محددة وتصديرها في ملف PDF جديد.' },
+        { id: 'delete-pdf-pages', name: 'حذف صفحات من PDF', desc: 'حذف صفحات غير مطلوبة مع الحفاظ على بقية المستند.' },
+        { id: 'rotate-pdf-pages', name: 'تدوير صفحات PDF', desc: 'تدوير صفحات مختارة 90 أو 180 أو 270 درجة.' },
+        { id: 'number-pdf-pages', name: 'ترقيم صفحات PDF', desc: 'إضافة أرقام متسلسلة إلى أسفل كل صفحة.' },
+        { id: 'reorder-pdf-pages', name: 'إعادة ترتيب صفحات PDF', desc: 'تغيير ترتيب الصفحات أو تكرار صفحات مختارة في نسخة جديدة.' },
+        { id: 'inspect-pdf', name: 'فحص خصائص PDF', desc: 'عرض عدد الصفحات وأحجامها والبيانات الوصفية والدوران.' },
+        { id: 'image-resize', name: 'تغيير أبعاد الصورة', desc: 'تغيير الحد الأقصى للعرض والارتفاع مع الحفاظ على نسبة الأبعاد.' },
+        { id: 'image-compress', name: 'ضغط الصور', desc: 'تقليل حجم الصورة بصيغة JPEG مع اختيار مستوى الجودة.' },
+        { id: 'image-format-converter', name: 'تحويل صيغة الصور', desc: 'التحويل بين PNG وJPG وWebP مع توضيح أثر الشفافية.' },
+        { id: 'image-watermark', name: 'إضافة علامة مائية للصورة', desc: 'كتابة علامة مائية عربية أو إنجليزية في أسفل الصورة.' },
+        { id: 'image-color-palette', name: 'استخراج لوحة ألوان الصورة', desc: 'تحليل عينة من الصورة وعرض أبرز الألوان مع نسب تقريبية.' },
+        { id: 'image-inspector', name: 'فحص معلومات الصورة', desc: 'عرض الأبعاد ونسبة العرض إلى الارتفاع والحجم والصيغة.' },
+        { id: 'json-formatter', name: 'تنسيق JSON والتحقق منه', desc: 'فحص صحة JSON وترتيبه بمسافات بادئة واضحة.' },
+        { id: 'json-minifier', name: 'تصغير JSON', desc: 'إزالة المسافات الزائدة من JSON صالح لتقليل حجمه.' },
+        { id: 'csv-to-json', name: 'تحويل CSV إلى JSON', desc: 'تحويل صف العناوين والسجلات إلى مصفوفة كائنات JSON.' },
+        { id: 'json-to-csv', name: 'تحويل JSON إلى CSV', desc: 'تحويل كائن أو مصفوفة كائنات إلى جدول CSV آمن للخلايا.' },
+        { id: 'text-cleaner', name: 'تنظيف النصوص', desc: 'إزالة محارف الاتجاه والمسافات الخفية وتوحيد فواصل الأسطر.' },
+        { id: 'remove-duplicate-lines', name: 'حذف الأسطر المكررة', desc: 'إزالة التكرار مع الحفاظ على أول ظهور وترتيب الأسطر.' },
+        { id: 'sort-text-lines', name: 'ترتيب الأسطر أبجدياً', desc: 'ترتيب الأسطر وفق قواعد العربية والإنجليزية مع الأرقام.' },
+        { id: 'text-statistics', name: 'إحصاءات النص', desc: 'حساب الكلمات والأحرف والأسطر والفقرات وزمن القراءة التقريبي.' },
+        { id: 'find-replace-text', name: 'بحث واستبدال داخل النص', desc: 'استبدال كل مرات ظهور عبارة محددة في ملف نصي.' },
+        { id: 'word-to-text', name: 'استخراج النص من Word', desc: 'استخراج نص DOCX إلى ملف TXT دون ادعاء الحفاظ على التنسيق.' }
       ];
 
       const fileInput = document.getElementById('fileInput');
@@ -1026,6 +1059,104 @@
         };
       }
 
+      async function saveProfessionalResult(result) {
+        if (!result) return;
+        if (result.kind === 'text') {
+          outputText.value = result.text || '';
+          updateStatus(result.summary || 'اكتملت العملية.', true);
+          return;
+        }
+        if (!result.blob || !result.filename) throw new Error('لم يتم إنشاء ملف قابل للتنزيل.');
+        downloadBlob(result.blob, result.filename);
+        outputText.value = result.summary || ('تم إنشاء الملف: ' + result.filename);
+        updateStatus(result.status || result.summary || 'اكتملت المعالجة.', true);
+      }
+
+      async function runProfessionalPdf(file, toolId) {
+        const actionById = {
+          'split-pdf': 'split', 'extract-pdf-pages': 'extract', 'delete-pdf-pages': 'delete',
+          'rotate-pdf-pages': 'rotate', 'number-pdf-pages': 'number',
+          'reorder-pdf-pages': 'reorder', 'inspect-pdf': 'inspect'
+        };
+        const action = actionById[toolId];
+        if (!action) throw new Error('أداة PDF غير معروفة.');
+        const options = {};
+        if (['extract', 'delete', 'rotate', 'reorder'].includes(action)) {
+          const promptTitle = action === 'delete' ? 'أرقام الصفحات المطلوب حذفها' :
+            action === 'reorder' ? 'الترتيب الجديد للصفحات' : 'أرقام الصفحات المطلوبة';
+          const pages = await promptForText(promptTitle + ' — مثال: 1-3,5', '1');
+          if (pages === null) return;
+          options.pages = pages;
+          if (action === 'rotate') {
+            const rotation = await promptForText('زاوية التدوير: 90 أو 180 أو 270', '90');
+            if (rotation === null) return;
+            options.rotation = Number(rotation);
+          }
+        }
+        updateStatus('جارٍ معالجة ملف PDF محلياً...', false);
+        const result = await ImageToTextProfessionalTools.processPdf(file, action, options);
+        await saveProfessionalResult(result);
+      }
+
+      async function runProfessionalImage(file, toolId) {
+        const actionById = {
+          'image-resize': 'resize', 'image-compress': 'compress',
+          'image-format-converter': 'format', 'image-watermark': 'watermark',
+          'image-color-palette': 'palette', 'image-inspector': 'inspect'
+        };
+        const action = actionById[toolId];
+        if (!action) throw new Error('أداة الصور غير معروفة.');
+        const options = {};
+        if (action === 'resize') {
+          const dimensions = await promptForText('أدخل الحد الأقصى للعرض × الارتفاع بالبكسل', '1600x1600');
+          if (dimensions === null) return;
+          const match = dimensions.match(/^\s*(\d+)\s*[x×]\s*(\d+)\s*$/i);
+          if (!match) throw new Error('اكتب الأبعاد بهذا الشكل: 1600x1600.');
+          options.width = Number(match[1]);
+          options.height = Number(match[2]);
+        } else if (action === 'compress') {
+          const quality = await promptForText('جودة JPEG من 30 إلى 95 بالمئة', '82');
+          if (quality === null) return;
+          options.quality = Number(quality);
+        } else if (action === 'format') {
+          const format = await promptForText('الصيغة المطلوبة: png أو jpg أو webp', 'webp');
+          if (format === null) return;
+          options.format = format.trim().toLowerCase();
+        } else if (action === 'watermark') {
+          const watermark = await promptForText('اكتب نص العلامة المائية', 'ImageToText');
+          if (watermark === null) return;
+          options.text = watermark;
+        }
+        updateStatus('جارٍ معالجة الصورة على جهازك...', false);
+        const result = await ImageToTextProfessionalTools.processImage(file, action, options);
+        await saveProfessionalResult(result);
+      }
+
+      async function runProfessionalText(file, toolId) {
+        const actionById = {
+          'json-formatter': 'format-json', 'json-minifier': 'minify-json',
+          'csv-to-json': 'csv-to-json', 'json-to-csv': 'json-to-csv',
+          'text-cleaner': 'clean-text', 'remove-duplicate-lines': 'remove-duplicates',
+          'sort-text-lines': 'sort-lines', 'text-statistics': 'statistics',
+          'find-replace-text': 'find-replace'
+        };
+        const action = actionById[toolId];
+        if (!action) throw new Error('أداة النصوص غير معروفة.');
+        const options = {};
+        if (action === 'find-replace') {
+          const searchValue = await promptForText('النص أو العبارة المطلوب البحث عنها', '');
+          if (searchValue === null) return;
+          if (!searchValue) throw new Error('عبارة البحث لا يمكن أن تكون فارغة.');
+          const replacement = await promptForText('النص البديل (اتركه فارغاً للحذف)', '');
+          if (replacement === null) return;
+          options.search = searchValue;
+          options.replacement = replacement;
+        }
+        updateStatus('جارٍ تحليل الملف النصي...', false);
+        const result = await ImageToTextProfessionalTools.processText(file, action, options);
+        await saveProfessionalResult(result);
+      }
+
       async function launchTool(toolId) {
         if (!toolId) return;
         fileInput.onchange = null;
@@ -1036,6 +1167,74 @@
         processBtn.hidden = toolId !== 'image-to-text';
 
         switch (toolId) {
+          case 'split-pdf':
+          case 'extract-pdf-pages':
+          case 'delete-pdf-pages':
+          case 'rotate-pdf-pages':
+          case 'number-pdf-pages':
+          case 'reorder-pdf-pages':
+          case 'inspect-pdf': {
+            fileInput.accept = '.pdf,application/pdf';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              await runProfessionalPdf(file, toolId);
+            });
+            fileInput.click();
+            break;
+          }
+
+          case 'image-resize':
+          case 'image-compress':
+          case 'image-format-converter':
+          case 'image-watermark':
+          case 'image-color-palette':
+          case 'image-inspector': {
+            fileInput.accept = 'image/*';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              await runProfessionalImage(file, toolId);
+            });
+            fileInput.click();
+            break;
+          }
+
+          case 'json-formatter':
+          case 'json-minifier':
+          case 'csv-to-json':
+          case 'json-to-csv':
+          case 'text-cleaner':
+          case 'remove-duplicate-lines':
+          case 'sort-text-lines':
+          case 'text-statistics':
+          case 'find-replace-text': {
+            fileInput.accept = '.txt,.md,.csv,.json,.log,.xml,.html,text/plain,text/csv,application/json';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              await runProfessionalText(file, toolId);
+            });
+            fileInput.click();
+            break;
+          }
+
+          case 'word-to-text': {
+            fileInput.accept = '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            fileInput.onchange = safeFileHandler(async (event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              updateStatus('جارٍ استخراج النص من DOCX...', false);
+              const text = await readDocxText(file);
+              const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+              downloadBlob(blob, file.name.replace(/\.docx$/i, '') + '.txt');
+              outputText.value = text;
+              updateStatus('تم استخراج نص DOCX. لا يتضمن هذا التصدير تخطيط Word أو الصور أو الجداول.', true);
+            });
+            fileInput.click();
+            break;
+          }
+
           case 'image-to-text': {
             fileInput.accept = 'image/*';
             fileInput.onchange = safeFileHandler(async (event) => {

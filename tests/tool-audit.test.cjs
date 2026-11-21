@@ -19,12 +19,12 @@ test("the complete inline app script parses before the page can initialize", () 
   assert.doesNotThrow(() => new Function(appScript));
 });
 
-test("all 29 catalog tools have exactly one switch handler", () => {
+test("all 52 catalog tools have exactly one switch handler", () => {
   const catalogMatch = appScript.match(/const toolCatalog = \[([\s\S]*?)\];/);
   assert.ok(catalogMatch);
   const ids = Array.from(catalogMatch[1].matchAll(/\{ id: '([a-z0-9-]+)'/g), (match) => match[1]);
   const handlers = Array.from(appScript.matchAll(/case\s+['"]([^'"]+)['"]\s*:/g), (match) => match[1]);
-  assert.equal(ids.length, 29);
+  assert.equal(ids.length, 52);
   assert.equal(new Set(ids).size, ids.length, "catalog IDs must be unique");
   assert.equal(new Set(handlers).size, handlers.length, "handler cases must be unique");
   assert.deepEqual(handlers.slice().sort(), ids.slice().sort());
